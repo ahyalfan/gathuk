@@ -10,11 +10,11 @@ import (
 )
 
 type Encoder[T any] interface {
-	Encode(map[string]any) ([]byte, error)
+	Encode(T) ([]byte, error)
 }
 
 type Decoder[T any] interface {
-	Decode([]byte) (map[string]any, error)
+	Decode([]byte) (T, error)
 }
 
 type Codec[T any] interface {
