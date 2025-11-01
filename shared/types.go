@@ -1,5 +1,5 @@
-// Package gathuk
-package gathuk
+// Package shared
+package shared
 
 type Tag string
 
