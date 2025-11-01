@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ahyalfan/gathuk/internal/encoding/env"
+	"github.com/ahyalfan/gathuk/internal/encoding/dotenv"
 )
 
 type Encoder[T any] interface {
@@ -81,7 +81,7 @@ func (dcr *DefaultCodecRegistry[T]) codec(format string) (Codec[T], bool) {
 	format = strings.ToLower(format)
 	switch format {
 	case "env":
-		return &env.Codec{}, true
+		return &dotenv.Codec[T]{}, true
 	default:
 		return nil, false
 	}
