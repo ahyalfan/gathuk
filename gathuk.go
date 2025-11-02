@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -47,13 +48,35 @@ func NewGathuk[T any]() *Gathuk[T] {
 func (g *Gathuk[T]) LoadConfigFiles(srcFiles ...string) error {
 	resolveFilenames(srcFiles...)
 	for _, filename := range srcFiles {
-		return g.loadFile(filename)
+		var (
+			partial T
+			err     error
+		)
+		partial, err = g.loadFile(filename)
+		if err != nil {
+			return err
+		}
+		if err := g.mergeStruct(&g.value, &partial); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (g *Gathuk[T]) LoadConfig(src io.Reader, format string) error {
-	return g.load(src, format)
+	var (
+		partial T
+		err     error
+	)
+	partial, err = g.load(src, format)
+	if err != nil {
+		return err
+	}
+	if err := g.mergeStruct(&g.value, &partial); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (g *Gathuk[T]) WriteConfigFile(dst string, config T) error {
@@ -64,46 +87,72 @@ func (g *Gathuk[T]) WriteConfig(out io.Writer, config T) error {
 	return nil
 }
 
-func (g *Gathuk[T]) loadFile(filename string) error {
+func (g *Gathuk[T]) loadFile(filename string) (T, error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return err
+		var zeroValue T
+		return zeroValue, err
 	}
 
 	defer f.Close()
 
-	ext := filepath.Ext(filename)
-
-	ext = strings.Trim(ext, ".")
+	ext := strings.Trim(filepath.Ext(filename), ".")
 
 	return g.load(f, ext)
 }
 
-func (g *Gathuk[T]) load(src io.Reader, format string) error {
+func (g *Gathuk[T]) load(src io.Reader, format string) (T, error) {
 	var buf bytes.Buffer
 
 	_, err := io.Copy(&buf, src)
 	if err != nil {
-		return err
+		var zeroValue T
+		return zeroValue, err
 	}
 
 	by := buf.Bytes()
 
 	dc, err := g.codecRegistry.Decoder(format)
 	if err != nil {
-		return err
+		var zeroValue T
+		return zeroValue, err
 	}
 
 	v, err := dc.Decode(by)
 	if err != nil {
-		return err
+		return v, err
 	}
 
-	g.value = v
-
-	return nil
+	return v, nil
 }
 
 func (g *Gathuk[T]) GetConfig() T {
 	return g.value
+}
+
+func (g *Gathuk[T]) mergeStruct(dst, src any) error {
+	dv := reflect.ValueOf(dst).Elem()
+	sv := reflect.ValueOf(src).Elem()
+
+	for i := 0; i < dv.NumField(); i++ {
+		df := dv.Field(i)
+		sf := sv.Field(i)
+
+		if !df.CanSet() {
+			continue
+		}
+
+		switch df.Kind() {
+		case reflect.Struct:
+			if err := g.mergeStruct(df.Addr().Interface(), sf.Addr().Interface()); err != nil {
+				return err
+			}
+		default:
+			if !isZeroValue(sf) {
+				df.Set(sf)
+			}
+		}
+	}
+
+	return nil
 }
