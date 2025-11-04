@@ -9,64 +9,18 @@ import (
 	"strings"
 
 	utility "github.com/ahyalfan/gathuk/internal/utils"
+	"github.com/ahyalfan/gathuk/option"
 	"github.com/ahyalfan/gathuk/shared"
 )
 
 type Codec[T any] struct {
+	option.DefaultCodec[T]
 	temp map[string][]byte
 }
 
 func (c *Codec[T]) Encode(val T) ([]byte, error) {
 	return nil, nil
 }
-
-// func (c *Codec[T]) Decode(buf []byte) (T, error) {
-// 	var (
-// 		value      T
-// 		skip, next int
-// 	)
-//
-// 	skip = -1
-//
-// 	for i, v := range buf {
-//
-// 		if v == '#' {
-// 			skip = i
-// 		}
-// 		if v == '\n' || v == '\r' || i == (len(buf)-1) {
-// 			bm := buf[next:i]
-//
-// 			if i == len(buf)-1 {
-// 				bm = buf[next : i+1]
-// 			}
-//
-// 			if skip >= 0 {
-// 				bm = buf[next:skip]
-// 			}
-//
-// 			skip = -1
-// 			next = i + 1
-//
-// 			bm = bytes.TrimSpace(bm)
-// 			fmt.Println(string(bm))
-// 			bs := bytes.Split(bm, []byte(" "))
-//
-// 			if len(bs) < 1 {
-// 				continue
-// 			}
-// 			bs = bytes.Split(bs[0], []byte("="))
-//
-// 			if len(bs) < 2 {
-// 				continue
-// 			}
-//
-// 			// c.temp[string(bs[0])] = bs[1]
-// 			fmt.Printf("key->%s,value->%s \n", string(bs[0]), string(bs[1]))
-// 		}
-// 	}
-//
-// 	return value, nil
-// }
 
 func (c *Codec[T]) Decode(buf []byte) (T, error) {
 	var value T
@@ -125,10 +79,14 @@ func (c *Codec[T]) scanNestedWithNestedPrefix(
 
 		if structField.Type.Kind() == reflect.Struct && structField.Type != parent {
 			nestedName := structField.Tag.Get(string(shared.GetTagNestedName()))
-			if nestedName != "" {
-				if nestedPrefix != "" {
-					nestedName = nestedPrefix + "_" + nestedName
-				}
+			if nestedName == "-" {
+				continue
+			}
+			if nestedName == "" {
+				nestedName = utility.PascalToUpperSnakeCase(structField.Name)
+			}
+			if nestedPrefix != "" {
+				nestedName = nestedPrefix + "_" + nestedName
 			}
 			c.scanNestedWithNestedPrefix(parent, field, nestedName)
 			continue
