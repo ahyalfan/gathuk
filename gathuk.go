@@ -56,8 +56,22 @@ func (g *Gathuk[T]) SetCustomCodecRegistry(c option.CodecRegistry[T]) *Gathuk[T]
 	return g
 }
 
-func (g *Gathuk[T]) SetDecodeOption(format string) {
-	g.CodecRegistry.Decoder(format)
+func (g *Gathuk[T]) SetDecodeOption(format string, decodeOption *option.DecodeOption) {
+	c, err := g.CodecRegistry.Decoder(format)
+	if err != nil {
+		g.logger.Error(err.Error())
+		panic("set decode option failed")
+	}
+	c.ApplyDecodeOption(decodeOption)
+}
+
+func (g *Gathuk[T]) SetEncodeOption(format string, encodeOption *option.EncodeOption) {
+	c, err := g.CodecRegistry.Encoder(format)
+	if err != nil {
+		g.logger.Error(err.Error())
+		panic("set decode option failed")
+	}
+	c.ApplyEncodeOption(encodeOption)
 }
 
 func (g *Gathuk[T]) LoadConfigFiles(srcFiles ...string) error {
