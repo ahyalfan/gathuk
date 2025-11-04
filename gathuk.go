@@ -9,20 +9,23 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	"github.com/ahyalfan/gathuk/option"
 )
 
 // Gathuk a configuration
 type Gathuk[T any] struct {
-	PersistInEnvirontment   bool   // set env in os or no, jika tidak maka taruh di memory atau return aja
-	OverrideWithEnvironment bool   // true untuk override environment, false untuk string, true jika config file lebih di utamakan
-	Mode                    string // dev, staging, production. mungkin set modenya di taruh di flag pas jalanin binary
+	globalDecodeOpt option.DecodeOption
+	globalEncodeOpt option.EncodeOption
+
+	Mode string // dev, staging, production. mungkin set modenya di taruh di flag pas jalanin binary
 	// mode file example dev.env,stag.env,dev.json
 
 	// value
 	value T
 
 	// codec interface
-	codecRegistry CodecRegistry[T]
+	CodecRegistry option.CodecRegistry[T]
 
 	// logger
 	logger *slog.Logger
@@ -40,9 +43,21 @@ func (fn optionFunc[T]) apply(g *Gathuk[T]) {
 
 func NewGathuk[T any]() *Gathuk[T] {
 	g := &Gathuk[T]{}
-	g.codecRegistry = NewDefaultCodecRegister[T]()
+	g.CodecRegistry = NewDefaultCodecRegister[T]()
 	g.logger = slog.New(slog.NewTextHandler(os.Stdout, nil)) // default slog
 	return g
+}
+
+func (g *Gathuk[T]) SetCustomCodecRegistry(c option.CodecRegistry[T]) *Gathuk[T] {
+	if c == nil {
+		panic("codec registry not nil")
+	}
+	g.CodecRegistry = c
+	return g
+}
+
+func (g *Gathuk[T]) SetDecodeOption(format string) {
+	g.CodecRegistry.Decoder(format)
 }
 
 func (g *Gathuk[T]) LoadConfigFiles(srcFiles ...string) error {
@@ -112,10 +127,14 @@ func (g *Gathuk[T]) load(src io.Reader, format string) (T, error) {
 
 	by := buf.Bytes()
 
-	dc, err := g.codecRegistry.Decoder(format)
+	dc, err := g.CodecRegistry.Decoder(format)
 	if err != nil {
 		var zeroValue T
 		return zeroValue, err
+	}
+
+	if ok := dc.CheckDecodeOption(); !ok {
+		dc.ApplyDecodeOption(&g.globalDecodeOpt)
 	}
 
 	v, err := dc.Decode(by)
