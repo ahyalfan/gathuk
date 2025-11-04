@@ -4,6 +4,7 @@ package dotenv
 import (
 	"bytes"
 	"log"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -15,11 +16,30 @@ import (
 
 type Codec[T any] struct {
 	option.DefaultCodec[T]
+
+	do   *option.DecodeOption
+	eo   *option.EncodeOption
 	temp map[string][]byte
+}
+
+func (c *Codec[T]) ApplyEncodeOption(eo *option.EncodeOption) {
+	c.eo = eo
+}
+
+func (c *Codec[T]) CheckEncodeOption() bool {
+	return c.eo != nil
 }
 
 func (c *Codec[T]) Encode(val T) ([]byte, error) {
 	return nil, nil
+}
+
+func (c *Codec[T]) ApplyDecodeOption(do *option.DecodeOption) {
+	c.do = do
+}
+
+func (c *Codec[T]) CheckDecodeOption() bool {
+	return c.do != nil
 }
 
 func (c *Codec[T]) Decode(buf []byte) (T, error) {
@@ -51,6 +71,14 @@ func (c *Codec[T]) Decode(buf []byte) (T, error) {
 		}
 
 		c.temp[string(bs[0])] = bs[1]
+
+		if c.do.PersistToOSEnv {
+			err := os.Setenv(string(bs[0]), string(bs[1]))
+			if err != nil {
+				var zeroValue T
+				return zeroValue, nil
+			}
+		}
 	}
 
 	err := c.scanWithNestedPrefix(&value)
@@ -107,7 +135,34 @@ func (c *Codec[T]) scanNestedWithNestedPrefix(
 		}
 		name = strings.ToUpper(name)
 
-		val, ok := c.temp[name]
+		var (
+			val []byte
+			ok  bool
+		)
+
+		if c.do.AutomaticEnv {
+			if c.do.PreferFileOverEnv {
+
+				val, ok = c.temp[name]
+				if !ok {
+					r := os.Getenv(name)
+					if r != "" {
+						val, ok = []byte(r), true
+					}
+				}
+			} else {
+				r := os.Getenv(name)
+				if r == "" {
+					val, ok = c.temp[name]
+				} else {
+					val, ok = []byte(r), true
+				}
+
+			}
+		} else {
+			val, ok = c.temp[name]
+		}
+
 		if !ok || !field.CanSet() {
 			continue
 		}
