@@ -25,6 +25,15 @@ type Database struct {
 	PoolingMax int    `config:"poling_max_pool"`
 }
 
+type Simple3 struct {
+	Simplee     int      `config:"simple_e"`
+	Debug       bool     `config:"debug_c"`
+	Database    Database `nested:"db"`
+	ExampleType string
+	User        string
+	Editor      string
+}
+
 func TestGathuk(t *testing.T) {
 	t.Run("Test 1 : Simple Load Gathuk config", func(t *testing.T) {
 		gt := NewGathuk[Simple]()
@@ -58,6 +67,47 @@ func TestGathuk(t *testing.T) {
 		customtests.Equals(t, "halo", gt.GetConfig().Database.Server)
 		customtests.Equals(t, 200, gt.GetConfig().Database.PoolingMax)
 		customtests.Equals(t, "senin", gt.GetConfig().ExampleType)
+	})
+
+	t.Run("Test 4 : Load Gathuk config and option global", func(t *testing.T) {
+		t.Run("Test 4.1: option global default", func(t *testing.T) {
+			gt := NewGathuk[Simple3]()
+
+			err := gt.LoadConfigFiles(".example_2.env")
+			customtests.OK(t, err)
+
+			customtests.Equals(t, 200, gt.GetConfig().Database.PoolingMax)
+			customtests.Equals(t, "senin", gt.GetConfig().ExampleType)
+			customtests.Equals(t, "bukan_ahyalfan", gt.GetConfig().User)
+		})
+		t.Run("Test 4.2: option global with automaticenv", func(t *testing.T) {
+			gt := NewGathuk[Simple3]()
+
+			gt.globalDecodeOpt.AutomaticEnv = true
+
+			err := gt.LoadConfigFiles(".example_2.env")
+			customtests.OK(t, err)
+
+			customtests.Equals(t, 200, gt.GetConfig().Database.PoolingMax)
+			customtests.Equals(t, "senin", gt.GetConfig().ExampleType)
+			customtests.Equals(t, "ahyalfan", gt.GetConfig().User)
+			customtests.Equals(t, "nvim", gt.GetConfig().Editor)
+		})
+
+		t.Run("Test 4.3: option global with automaticenv but file priority", func(t *testing.T) {
+			gt := NewGathuk[Simple3]()
+
+			gt.globalDecodeOpt.AutomaticEnv = true
+			gt.globalDecodeOpt.PreferFileOverEnv = true
+
+			err := gt.LoadConfigFiles(".example_2.env")
+			customtests.OK(t, err)
+
+			customtests.Equals(t, 200, gt.GetConfig().Database.PoolingMax)
+			customtests.Equals(t, "senin", gt.GetConfig().ExampleType)
+			customtests.Equals(t, "bukan_ahyalfan", gt.GetConfig().User)
+			customtests.Equals(t, "nvim", gt.GetConfig().Editor)
+		})
 	})
 }
 
