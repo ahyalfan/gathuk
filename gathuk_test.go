@@ -2,9 +2,16 @@
 package gathuk
 
 import (
+	"os"
 	"testing"
 
 	customtests "github.com/ahyalfan/gathuk/internal/utils/custom-test"
+)
+
+var (
+	EXAMPLE_ENV_FILE   string = "./example/dotenv/.example.env"
+	EXAMPLE_2_ENV_file string = "./example/dotenv/.example_2.env"
+	EXAMPLE_1_ENV_file string = "./example/dotenv/.example_1.env"
 )
 
 type Simple struct {
@@ -38,7 +45,7 @@ func TestGathuk(t *testing.T) {
 	t.Run("Test 1 : Simple Load Gathuk config", func(t *testing.T) {
 		gt := NewGathuk[Simple]()
 
-		err := gt.LoadConfigFiles(".example.env")
+		err := gt.LoadConfigFiles(EXAMPLE_ENV_FILE)
 		customtests.OK(t, err)
 		customtests.Equals(t, "hore", gt.GetConfig().SimpleC)
 		customtests.Equals(t, 2, gt.GetConfig().SimpleE)
@@ -46,7 +53,7 @@ func TestGathuk(t *testing.T) {
 	t.Run("Test 2 : Nested Struct Load Gathuk config", func(t *testing.T) {
 		gt := NewGathuk[Simple2]()
 
-		err := gt.LoadConfigFiles(".example.env")
+		err := gt.LoadConfigFiles(EXAMPLE_ENV_FILE)
 		customtests.OK(t, err)
 
 		customtests.Equals(t, 2, gt.GetConfig().Simplee)
@@ -58,7 +65,9 @@ func TestGathuk(t *testing.T) {
 	t.Run("Test 3 : Nested Struct Load Gathuk config", func(t *testing.T) {
 		gt := NewGathuk[Simple2]()
 
-		err := gt.LoadConfigFiles(".example.env", ".example_1.env")
+		gt.SetConfigFiles(EXAMPLE_ENV_FILE)
+		err := gt.LoadConfigFiles(EXAMPLE_1_ENV_file)
+		// err := gt.LoadConfigFiles(EXAMPLE_ENV_FILE, EXAMPLE_1_ENV_file) // still works
 		customtests.OK(t, err)
 
 		customtests.Equals(t, 2, gt.GetConfig().Simplee)
@@ -73,7 +82,7 @@ func TestGathuk(t *testing.T) {
 		t.Run("Test 4.1: option global default", func(t *testing.T) {
 			gt := NewGathuk[Simple3]()
 
-			err := gt.LoadConfigFiles(".example_2.env")
+			err := gt.LoadConfigFiles(EXAMPLE_2_ENV_file)
 			customtests.OK(t, err)
 
 			customtests.Equals(t, 200, gt.GetConfig().Database.PoolingMax)
@@ -85,7 +94,7 @@ func TestGathuk(t *testing.T) {
 
 			gt.globalDecodeOpt.AutomaticEnv = true
 
-			err := gt.LoadConfigFiles(".example_2.env")
+			err := gt.LoadConfigFiles(EXAMPLE_2_ENV_file)
 			customtests.OK(t, err)
 
 			customtests.Equals(t, 200, gt.GetConfig().Database.PoolingMax)
@@ -100,13 +109,26 @@ func TestGathuk(t *testing.T) {
 			gt.globalDecodeOpt.AutomaticEnv = true
 			gt.globalDecodeOpt.PreferFileOverEnv = true
 
-			err := gt.LoadConfigFiles(".example_2.env")
+			err := gt.LoadConfigFiles(EXAMPLE_2_ENV_file)
 			customtests.OK(t, err)
 
 			customtests.Equals(t, 200, gt.GetConfig().Database.PoolingMax)
 			customtests.Equals(t, "senin", gt.GetConfig().ExampleType)
 			customtests.Equals(t, "bukan_ahyalfan", gt.GetConfig().User)
 			customtests.Equals(t, "nvim", gt.GetConfig().Editor)
+		})
+
+		t.Run("Test 4.4: option global with set in os env", func(t *testing.T) {
+			gt := NewGathuk[Simple3]()
+
+			gt.globalDecodeOpt.AutomaticEnv = true
+			gt.globalDecodeOpt.PreferFileOverEnv = true
+			gt.globalDecodeOpt.PersistToOSEnv = true
+
+			err := gt.LoadConfigFiles(EXAMPLE_ENV_FILE)
+			customtests.OK(t, err)
+
+			customtests.Equals(t, "hore", os.Getenv("SIMPLE_C"))
 		})
 	})
 }
@@ -116,7 +138,7 @@ func BenchmarkGathuk(b *testing.B) {
 		for b.Loop() {
 			gt := NewGathuk[Simple]()
 
-			err := gt.LoadConfigFiles(".example.env")
+			err := gt.LoadConfigFiles(EXAMPLE_ENV_FILE)
 			if err != nil {
 				b.Fatalf("Failed to load config: %v", err)
 			}
@@ -129,7 +151,7 @@ func BenchmarkGathuk(b *testing.B) {
 		for b.Loop() {
 			gt := NewGathuk[Simple2]()
 
-			err := gt.LoadConfigFiles(".example.env")
+			err := gt.LoadConfigFiles(EXAMPLE_ENV_FILE)
 			if err != nil {
 				b.Fatalf("Failed to load config: %v", err)
 			}
@@ -144,7 +166,7 @@ func BenchmarkGathuk(b *testing.B) {
 		for b.Loop() {
 			gt := NewGathuk[Simple2]()
 
-			err := gt.LoadConfigFiles(".example.env", ".example_1.env")
+			err := gt.LoadConfigFiles(EXAMPLE_ENV_FILE, EXAMPLE_1_ENV_file)
 			if err != nil {
 				b.Fatalf("Failed to load config: %v", err)
 			}
