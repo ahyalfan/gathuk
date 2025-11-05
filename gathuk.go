@@ -21,8 +21,12 @@ type Gathuk[T any] struct {
 	Mode string // dev, staging, production. mungkin set modenya di taruh di flag pas jalanin binary
 	// mode file example dev.env,stag.env,dev.json
 
+	ConfigFiles []string
+
 	// value
 	value T
+
+	// map value -> if map feature ready, like convert to map or write use map
 
 	// codec interface
 	CodecRegistry option.CodecRegistry[T]
@@ -74,8 +78,12 @@ func (g *Gathuk[T]) SetEncodeOption(format string, encodeOption *option.EncodeOp
 	c.ApplyEncodeOption(encodeOption)
 }
 
+func (g *Gathuk[T]) SetConfigFiles(srcFiles ...string) {
+	g.ConfigFiles = srcFiles
+}
+
 func (g *Gathuk[T]) LoadConfigFiles(srcFiles ...string) error {
-	resolveFilenames(srcFiles...)
+	srcFiles = resolveFilenames(append(g.ConfigFiles, srcFiles...)...)
 	for _, filename := range srcFiles {
 		var (
 			partial T
