@@ -31,7 +31,29 @@ func (c *Codec[T]) CheckEncodeOption() bool {
 }
 
 func (c *Codec[T]) Encode(val T) ([]byte, error) {
-	return nil, nil
+	if c.temp == nil {
+		c.temp = make(map[string][]byte)
+	}
+
+	c.flattenWithNestedPrefix(val)
+	// var build strings.Builder
+	// for k, v := range c.temp {
+	// 	build.WriteString(k)
+	// 	build.WriteRune('=')
+	// 	build.Write(v)
+	// 	build.WriteRune('\n')
+	// }
+	//
+	// return []byte(build.String()), nil
+
+	var build []byte
+	for k, v := range c.temp {
+		build = append(build, []byte(k)...)
+		build = append(build, '=')
+		build = append(build, v...)
+		build = append(build, '\n')
+	}
+	return build, nil
 }
 
 func (c *Codec[T]) ApplyDecodeOption(do *option.DecodeOption) {
@@ -171,6 +193,58 @@ func (c *Codec[T]) scanNestedWithNestedPrefix(
 	}
 }
 
+func (c *Codec[T]) flattenWithNestedPrefix(v T) error {
+	vt := reflect.ValueOf(v)
+	if vt.Kind() == reflect.Ptr {
+		vt = vt.Elem()
+	}
+	parent := reflect.TypeOf(v)
+	c.flattenNestedWithNestedPrefix(parent, vt, "")
+
+	return nil
+}
+
+func (c *Codec[T]) flattenNestedWithNestedPrefix(
+	parent reflect.Type, v reflect.Value, nestedPrefix string,
+) {
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		structField := v.Type().Field(i)
+
+		if structField.Type.Kind() == reflect.Struct && structField.Type != parent {
+			nestedName := structField.Tag.Get(string(shared.GetTagNestedName()))
+			if nestedName == "-" {
+				continue
+			}
+			if nestedName == "" {
+				nestedName = utility.PascalToUpperSnakeCase(structField.Name)
+			}
+			if nestedPrefix != "" {
+				nestedName = nestedPrefix + "_" + nestedName
+			}
+			c.scanNestedWithNestedPrefix(parent, field, nestedName)
+			continue
+		}
+
+		var name string
+		name = structField.Tag.Get(string(shared.GetTagName()))
+		if name == "-" {
+			continue
+		}
+		if name == "" {
+			name = utility.PascalToUpperSnakeCase(structField.Name)
+		}
+
+		if nestedPrefix != "" {
+			sub := nestedPrefix + "_"
+			name = sub + name
+		}
+		name = strings.ToUpper(name)
+
+		c.temp[name] = parseToBytes(field)
+	}
+}
+
 func setValue(field reflect.Value, val string) {
 	if field.Kind() == reflect.Ptr {
 		if field.IsNil() {
@@ -240,4 +314,32 @@ func setValueAny(field reflect.Value, val any) {
 		}
 		field.SetBool(bVal)
 	}
+}
+
+func parseToBytes(field reflect.Value) []byte {
+	if field.Kind() == reflect.Ptr {
+		if field.IsNil() {
+			field.Set(reflect.New(field.Type().Elem()))
+		}
+		field = field.Elem()
+	}
+
+	// Basic kinds
+	switch field.Kind() {
+	case reflect.String:
+		return []byte(field.String())
+
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return []byte(strconv.FormatInt(field.Int(), 10))
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return []byte(strconv.FormatUint(field.Uint(), 10))
+
+	case reflect.Float32, reflect.Float64:
+		return []byte(strconv.FormatFloat(field.Float(), 'f', -1, 64))
+
+	case reflect.Bool:
+		return []byte(strconv.FormatBool(field.Bool()))
+	}
+	return nil
 }
