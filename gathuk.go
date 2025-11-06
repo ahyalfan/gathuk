@@ -4,6 +4,7 @@ package gathuk
 import (
 	"bytes"
 	"io"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -116,14 +117,6 @@ func (g *Gathuk[T]) LoadConfig(src io.Reader, format string) error {
 	return nil
 }
 
-func (g *Gathuk[T]) WriteConfigFile(dst string, config T) error {
-	return nil
-}
-
-func (g *Gathuk[T]) WriteConfig(out io.Writer, config T) error {
-	return nil
-}
-
 func (g *Gathuk[T]) loadFile(filename string) (T, error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -165,6 +158,66 @@ func (g *Gathuk[T]) load(src io.Reader, format string) (T, error) {
 	}
 
 	return v, nil
+}
+
+// WriteConfigFile a
+func (g *Gathuk[T]) WriteConfigFile(dst string, mode fs.FileMode, config T) error {
+	err := g.writeFile(dst, mode, config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *Gathuk[T]) WriteConfig(out io.Writer, format string, config T) error {
+	err := g.write(out, format, config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *Gathuk[T]) writeFile(dst string, mode fs.FileMode, config T) error {
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	if mode != 0 {
+		err = f.Chmod(mode)
+		if err != nil {
+			return err
+		}
+	}
+
+	ext := strings.Trim(filepath.Ext(dst), ".")
+
+	err = g.write(f, ext, config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *Gathuk[T]) write(out io.Writer, format string, config T) error {
+	enc, err := g.CodecRegistry.Encoder(format)
+	if err != nil {
+		return err
+	}
+
+	bys, err := enc.Encode(config)
+	if err != nil {
+		return err
+	}
+	_, err = out.Write(bys)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (g *Gathuk[T]) GetConfig() T {
