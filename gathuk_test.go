@@ -41,7 +41,7 @@ type Simple3 struct {
 	Editor      string
 }
 
-func TestGathuk(t *testing.T) {
+func TestGathukLoad(t *testing.T) {
 	t.Run("Test 1 : Simple Load Gathuk config", func(t *testing.T) {
 		gt := NewGathuk[Simple]()
 
@@ -129,6 +129,17 @@ func TestGathuk(t *testing.T) {
 			customtests.OK(t, err)
 
 			customtests.Equals(t, "hore", os.Getenv("SIMPLE_C"))
+		})
+	})
+}
+
+func TestGathukWrite(t *testing.T) {
+	t.Run("Test 1: simple write config", func(t *testing.T) {
+		gt := NewGathuk[Simple]()
+
+		gt.writeFile("example/dotenv/example_12.env", 0, Simple{
+			SimpleC: "hore",
+			SimpleE: 100,
 		})
 	})
 }
