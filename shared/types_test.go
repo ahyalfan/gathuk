@@ -1,4 +1,4 @@
-// Package shared
+// Package shared provides utility types and functions for handling custom tags used in structs.
 package shared
 
 import (
