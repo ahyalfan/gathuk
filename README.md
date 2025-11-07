@@ -382,14 +382,9 @@ goos: linux
 goarch: amd64
 pkg: github.com/ahyalfan/gathuk
 cpu: AMD Ryzen 5 6600H with Radeon Graphics
-BenchmarkGathuk/Benchmark_1_:_Simple_Load_Gathuk_config-12                 82419             12633 ns/op            3352 B/op         55 allocs/o
-p
-BenchmarkGathuk/Benchmark_2_:_Nested_Struct_Load_Gathuk_config-12         103670             11256 ns/op            3760 B/op         71 allocs/o
-p
-BenchmarkGathuk/Benchmark_3_:_Nested_Struct_Load_Gathuk_config_with_multiple_files-12              56586             21522 ns/op            6808
-B/op         120 allocs/op
-PASS
-ok      github.com/ahyalfan/gathuk      3.432s
+BenchmarkGathuk/Benchmark_1_:_Simple_Load_Gathuk_config-12                 82419             12633 ns/op            3352 B/op         55 allocs/op
+BenchmarkGathuk/Benchmark_2_:_Nested_Struct_Load_Gathuk_config-12         103670             11256 ns/op            3760 B/op         71 allocs/op
+BenchmarkGathuk/Benchmark_3_:_Nested_Struct_Load_Gathuk_config_with_multiple_files-12              56586             21522 ns/op            6808 B/op         120 allocs/op
 ```
 
 Run benchmarks:
