@@ -1,4 +1,4 @@
-// Package shared
+// Package shared provides utility types and functions for handling custom tags used in structs.
 package shared
 
 // scanning config for struct
@@ -7,10 +7,12 @@ var (
 	nestedName Tag = "nested" // if use nested tag
 )
 
+// GetTagName returns the tag used for the name field (config).
 func GetTagName() Tag {
 	return name
 }
 
+// GetTagNestedName returns the tag used for nested fields.
 func GetTagNestedName() Tag {
 	return nestedName
 }

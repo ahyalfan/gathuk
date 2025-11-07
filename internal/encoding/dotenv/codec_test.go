@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	customtests "github.com/ahyalfan/gathuk/internal/utils/custom-test"
+	"github.com/ahyalfan/gathuk/option"
 )
 
 type Example struct {
@@ -14,10 +17,54 @@ type Example struct {
 
 func TestCodec(t *testing.T) {
 	cdc := Codec[Example]{}
-	got, _ := cdc.Decode([]byte(
+	cdc.ApplyDecodeOption(&option.DecodeOption{
+		AutomaticEnv: false,
+	})
+	got, err := cdc.Decode([]byte(
 		`HELLO=apa
 		 HOLLA=1a`))
+
+	customtests.OK(t, err)
 	fmt.Println(got)
+
+	t.Run("Test 2: Encode", func(t *testing.T) {
+		cdc := Codec[Example]{}
+		got, err := cdc.Encode(Example{
+			Hello: "hello_world",
+			Holla: "asdasdas",
+		})
+
+		customtests.OK(t, err)
+		// customtests.Equals(t, got, want)
+		fmt.Print(string(got))
+	})
+}
+
+func BenchmarkCodec(b *testing.B) {
+	b.Run("Benchmarking 1: Decode", func(b *testing.B) {
+		for b.Loop() {
+			cdc := Codec[Example]{}
+			cdc.ApplyDecodeOption(&option.DecodeOption{
+				AutomaticEnv: false,
+			})
+			_, err := cdc.Decode([]byte(
+				`HELLO=apa
+		 HOLLA=1a`))
+
+			customtests.OK(b, err)
+		}
+	})
+	b.Run("Benchmarking 2: Encode ", func(b *testing.B) {
+		for b.Loop() {
+			cdc := Codec[Example]{}
+			_, err := cdc.Encode(Example{
+				Hello: "hello_world",
+				Holla: "asdasdas",
+			})
+
+			customtests.OK(b, err)
+		}
+	})
 }
 
 func BenchmarkSetValue(b *testing.B) {
