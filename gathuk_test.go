@@ -189,4 +189,49 @@ func BenchmarkGathuk(b *testing.B) {
 			_ = gt.GetConfig().ExampleType
 		}
 	})
+
+	b.Run("Benchmark 4 : Simple Load Gathuk config v2", func(b *testing.B) {
+		for b.Loop() {
+			gt := NewGathuk[Simple]()
+
+			err := gt.LoadConfigFilesV2(EXAMPLE_ENV_FILE)
+			if err != nil {
+				b.Fatalf("Failed to load config: %v", err)
+			}
+			_ = gt.GetConfig().SimpleC
+			_ = gt.GetConfig().SimpleE
+		}
+	})
+
+	b.Run("Benchmark 5 : Nested Struct Load Gathuk config v2", func(b *testing.B) {
+		for b.Loop() {
+			gt := NewGathuk[Simple2]()
+
+			err := gt.LoadConfigFilesV2(EXAMPLE_ENV_FILE)
+			if err != nil {
+				b.Fatalf("Failed to load config: %v", err)
+			}
+			_ = gt.GetConfig().Simplee
+			_ = gt.GetConfig().Debug
+			_ = gt.GetConfig().Database.User
+			_ = gt.GetConfig().Database.Server
+		}
+	})
+
+	b.Run("Benchmark 6 : Nested Struct Load Gathuk config with multiple files v2", func(b *testing.B) {
+		for b.Loop() {
+			gt := NewGathuk[Simple2]()
+
+			err := gt.LoadConfigFilesV2(EXAMPLE_ENV_FILE, EXAMPLE_1_ENV_file)
+			if err != nil {
+				b.Fatalf("Failed to load config: %v", err)
+			}
+			_ = gt.GetConfig().Simplee
+			_ = gt.GetConfig().Debug
+			_ = gt.GetConfig().Database.User
+			_ = gt.GetConfig().Database.Server
+			_ = gt.GetConfig().Database.PoolingMax
+			_ = gt.GetConfig().ExampleType
+		}
+	})
 }

@@ -252,6 +252,17 @@ func (g *Gathuk[T]) LoadConfigFiles(srcFiles ...string) error {
 	return nil
 }
 
+func (g *Gathuk[T]) LoadConfigFilesV2(srcFiles ...string) error {
+	srcFiles = resolveFilenames(append(g.ConfigFiles, srcFiles...)...)
+	for _, filename := range srcFiles {
+		err := g.loadFileV2(filename)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // LoadConfig loads configuration from an io.Reader with the specified format
 // and merges it into the configuration struct.
 //
@@ -314,6 +325,19 @@ func (g *Gathuk[T]) loadFile(filename string) (T, error) {
 	return g.load(f, ext)
 }
 
+func (g *Gathuk[T]) loadFileV2(filename string) error {
+	f, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	ext := strings.Trim(filepath.Ext(filename), ".")
+
+	return g.loadV2(f, ext)
+}
+
 // load is an internal method that reads and parses configuration data from an io.Reader.
 //
 // Parameters:
@@ -348,6 +372,33 @@ func (g *Gathuk[T]) load(src io.Reader, format string) (T, error) {
 	}
 
 	return v, nil
+}
+
+func (g *Gathuk[T]) loadV2(src io.Reader, format string) error {
+	var buf bytes.Buffer
+
+	_, err := io.Copy(&buf, src)
+	if err != nil {
+		return err
+	}
+
+	by := buf.Bytes()
+
+	dc, err := g.CodecRegistry.Decoder(format)
+	if err != nil {
+		return err
+	}
+
+	if ok := dc.CheckDecodeOption(); !ok {
+		dc.ApplyDecodeOption(&g.globalDecodeOpt)
+	}
+
+	err = dc.DecodePointer(by, &g.value)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // WriteConfigFile writes the configuration struct to a file with the specified permissions.

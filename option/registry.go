@@ -66,6 +66,8 @@ type Decoder[T any] interface {
 	//  - error: An error if decoding fails
 	Decode([]byte) (T, error)
 
+	DecodePointer([]byte, *T) error
+
 	// DecodeOptionApplier provides methods for applying decode options
 	DecodeOptionApplier
 

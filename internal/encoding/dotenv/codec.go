@@ -264,6 +264,47 @@ func (c *Codec[T]) Decode(buf []byte) (T, error) {
 	return value, err
 }
 
+func (c *Codec[T]) DecodePointer(buf []byte, value *T) error {
+	if c.temp == nil {
+		c.temp = make(map[string][]byte)
+	}
+
+	lines := bytes.SplitSeq(buf, []byte{'\n'})
+
+	for line := range lines {
+
+		line = bytes.TrimSpace(line)
+		escape := bytes.IndexByte(line, '#')
+		if escape != -1 {
+			line = line[:escape]
+		}
+
+		bs := bytes.Split(line, []byte(" "))
+
+		if len(bs) < 1 {
+			continue
+		}
+		bs = bytes.Split(bs[0], []byte("="))
+
+		if len(bs) < 2 {
+			continue
+		}
+
+		c.temp[string(bs[0])] = bs[1]
+
+		if c.do.PersistToOSEnv {
+			err := os.Setenv(string(bs[0]), string(bs[1]))
+			if err != nil {
+				return nil
+			}
+		}
+	}
+
+	err := c.scanWithNestedPrefix(value)
+
+	return err
+}
+
 // scanWithNestedPrefix initiates the recursive scanning process to populate
 // a struct from the parsed key-value pairs.
 //

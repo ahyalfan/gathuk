@@ -102,6 +102,10 @@ func (dc *DefaultCodec[T]) Decode([]byte) (T, error) {
 	return zeroValue, nil
 }
 
+func (dc *DefaultCodec[T]) DecodePointer([]byte, *T) error {
+	return nil
+}
+
 // ApplyEncodeOption is a no-op implementation of the EncodeOptionApplier interface.
 //
 // This default implementation does nothing. Custom codec implementations that
