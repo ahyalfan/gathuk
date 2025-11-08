@@ -19,10 +19,9 @@ package option
 //	    decodeOpt *option.DecodeOption
 //	}
 //
-//	func (c *JSONCodec[T]) Decode(buf []byte) (T, error) {
-//	    var val T
-//	    err := json.Unmarshal(buf, &val)
-//	    return val, err
+//	func (c *JSONCodec[T]) Decode(buf []byte, val *T) error {
+//	    err := json.Unmarshal(buf, val)
+//	    return  err
 //	}
 //
 //	func (c *JSONCodec[T]) Encode(val T) ([]byte, error) {
@@ -92,14 +91,12 @@ func (dc *DefaultCodec[T]) CheckDecodeOption() bool { return false }
 //
 // Example override:
 //
-//	func (c *JSONCodec[T]) Decode(buf []byte) (T, error) {
-//	    var val T
-//	    err := json.Unmarshal(buf, &val)
-//	    return val, err
+//	func (c *JSONCodec[T]) Decode(buf []byte, val *T) error {
+//	    err := json.Unmarshal(buf, val)
+//	    return  err
 //	}
-func (dc *DefaultCodec[T]) Decode([]byte) (T, error) {
-	var zeroValue T
-	return zeroValue, nil
+func (dc *DefaultCodec[T]) Decode([]byte, *T) error {
+	return nil
 }
 
 // ApplyEncodeOption is a no-op implementation of the EncodeOptionApplier interface.

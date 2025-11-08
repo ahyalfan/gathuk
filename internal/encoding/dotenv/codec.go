@@ -220,9 +220,7 @@ func (c *Codec[T]) CheckDecodeOption() bool {
 //
 //	data := []byte("PORT=8080\nHOST=localhost")
 //	config, err := codec.Decode(data)
-func (c *Codec[T]) Decode(buf []byte) (T, error) {
-	var value T
-
+func (c *Codec[T]) Decode(buf []byte, val *T) error {
 	if c.temp == nil {
 		c.temp = make(map[string][]byte)
 	}
@@ -253,15 +251,14 @@ func (c *Codec[T]) Decode(buf []byte) (T, error) {
 		if c.do.PersistToOSEnv {
 			err := os.Setenv(string(bs[0]), string(bs[1]))
 			if err != nil {
-				var zeroValue T
-				return zeroValue, nil
+				return nil
 			}
 		}
 	}
 
-	err := c.scanWithNestedPrefix(&value)
+	err := c.scanWithNestedPrefix(val)
 
-	return value, err
+	return err
 }
 
 // scanWithNestedPrefix initiates the recursive scanning process to populate

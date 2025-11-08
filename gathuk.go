@@ -237,15 +237,8 @@ func (g *Gathuk[T]) SetConfigFiles(srcFiles ...string) {
 func (g *Gathuk[T]) LoadConfigFiles(srcFiles ...string) error {
 	srcFiles = resolveFilenames(append(g.ConfigFiles, srcFiles...)...)
 	for _, filename := range srcFiles {
-		var (
-			partial T
-			err     error
-		)
-		partial, err = g.loadFile(filename)
+		err := g.loadFile(filename, &g.value)
 		if err != nil {
-			return err
-		}
-		if err := g.mergeStruct(&g.value, &partial); err != nil {
 			return err
 		}
 	}
@@ -278,18 +271,10 @@ func (g *Gathuk[T]) LoadConfigFiles(srcFiles ...string) error {
 //	config := strings.NewReader("PORT=8080\nHOST=localhost")
 //	err = gt.LoadConfig(config, "env")
 func (g *Gathuk[T]) LoadConfig(src io.Reader, format string) error {
-	var (
-		partial T
-		err     error
-	)
-	partial, err = g.load(src, format)
+	err := g.load(src, format, &g.value)
 	if err != nil {
 		return err
 	}
-	if err := g.mergeStruct(&g.value, &partial); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -300,18 +285,17 @@ func (g *Gathuk[T]) LoadConfig(src io.Reader, format string) error {
 //   - filename: Path to the configuration file
 //
 // Returns the parsed configuration struct and any error encountered.
-func (g *Gathuk[T]) loadFile(filename string) (T, error) {
+func (g *Gathuk[T]) loadFile(filename string, val *T) error {
 	f, err := os.Open(filename)
 	if err != nil {
-		var zeroValue T
-		return zeroValue, err
+		return err
 	}
 
 	defer f.Close()
 
 	ext := strings.Trim(filepath.Ext(filename), ".")
 
-	return g.load(f, ext)
+	return g.load(f, ext, val)
 }
 
 // load is an internal method that reads and parses configuration data from an io.Reader.
@@ -321,33 +305,31 @@ func (g *Gathuk[T]) loadFile(filename string) (T, error) {
 //   - format: The format of the configuration data
 //
 // Returns the parsed configuration struct and any error encountered.
-func (g *Gathuk[T]) load(src io.Reader, format string) (T, error) {
+func (g *Gathuk[T]) load(src io.Reader, format string, val *T) error {
 	var buf bytes.Buffer
 
 	_, err := io.Copy(&buf, src)
 	if err != nil {
-		var zeroValue T
-		return zeroValue, err
+		return err
 	}
 
 	by := buf.Bytes()
 
 	dc, err := g.CodecRegistry.Decoder(format)
 	if err != nil {
-		var zeroValue T
-		return zeroValue, err
+		return err
 	}
 
 	if ok := dc.CheckDecodeOption(); !ok {
 		dc.ApplyDecodeOption(&g.globalDecodeOpt)
 	}
 
-	v, err := dc.Decode(by)
+	err = dc.Decode(by, val)
 	if err != nil {
-		return v, err
+		return err
 	}
 
-	return v, nil
+	return nil
 }
 
 // WriteConfigFile writes the configuration struct to a file with the specified permissions.
