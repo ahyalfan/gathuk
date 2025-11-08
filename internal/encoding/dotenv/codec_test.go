@@ -20,9 +20,10 @@ func TestCodec(t *testing.T) {
 	cdc.ApplyDecodeOption(&option.DecodeOption{
 		AutomaticEnv: false,
 	})
-	got, err := cdc.Decode([]byte(
+	got := &Example{}
+	err := cdc.Decode([]byte(
 		`HELLO=apa
-		 HOLLA=1a`))
+		 HOLLA=1a`), got)
 
 	customtests.OK(t, err)
 	fmt.Println(got)
@@ -47,9 +48,10 @@ func BenchmarkCodec(b *testing.B) {
 			cdc.ApplyDecodeOption(&option.DecodeOption{
 				AutomaticEnv: false,
 			})
-			_, err := cdc.Decode([]byte(
+			ex := &Example{}
+			err := cdc.Decode([]byte(
 				`HELLO=apa
-		 HOLLA=1a`))
+		 HOLLA=1a`), ex)
 
 			customtests.OK(b, err)
 		}

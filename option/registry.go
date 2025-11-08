@@ -50,10 +50,9 @@ type Encoder[T any] interface {
 //	    option.DefaultCodec[T]
 //	}
 //
-//	func (d *JSONDecoder[T]) Decode(buf []byte) (T, error) {
-//	    var val T
-//	    err := json.Unmarshal(buf, &val)
-//	    return val, err
+//	func (d *JSONDecoder[T]) Decode(buf []byte,val *T)  error {
+//	    err := json.Unmarshal(buf, val)
+//	    return  err
 //	}
 type Decoder[T any] interface {
 	// Decode parses byte data and returns a populated configuration struct.
@@ -64,7 +63,7 @@ type Decoder[T any] interface {
 	// Returns:
 	//  - T: The decoded configuration struct
 	//  - error: An error if decoding fails
-	Decode([]byte) (T, error)
+	Decode([]byte, *T) error
 
 	// DecodeOptionApplier provides methods for applying decode options
 	DecodeOptionApplier
@@ -91,10 +90,9 @@ type Decoder[T any] interface {
 //	    return json.Marshal(val)
 //	}
 //
-//	func (c *JSONCodec[T]) Decode(buf []byte) (T, error) {
-//	    var val T
-//	    err := json.Unmarshal(buf, &val)
-//	    return val, err
+//	func (c *JSONCodec[T]) Decode(buf []byte,val *T) error {
+//	    err := json.Unmarshal(buf, val)
+//	    return  err
 //	}
 type Codec[T any] interface {
 	Encoder[T]
