@@ -201,10 +201,9 @@ type JSONCodec[T any] struct {
     option.DefaultCodec[T]
 }
 
-func (c *JSONCodec[T]) Decode(buf []byte) (T, error) {
-    var value T
-    err := json.Unmarshal(buf, &value)
-    return value, err
+func (c *JSONCodec[T]) Decode(buf []byte,val  *T) error {
+    err := json.Unmarshal(buf, val)
+    return  err
 }
 
 func (c *JSONCodec[T]) Encode(val T) ([]byte, error) {
