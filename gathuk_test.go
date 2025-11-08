@@ -137,10 +137,11 @@ func TestGathukWrite(t *testing.T) {
 	t.Run("Test 1: simple write config", func(t *testing.T) {
 		gt := NewGathuk[Simple]()
 
-		gt.writeFile("example/dotenv/example_12.env", 0, Simple{
+		err := gt.writeFile("example/dotenv/example_12.env", 0, Simple{
 			SimpleC: "hore",
 			SimpleE: 100,
 		})
+		customtests.OK(t, err)
 	})
 }
 
