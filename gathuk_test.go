@@ -22,7 +22,7 @@ type Simple struct {
 type Simple2 struct {
 	Simplee     int      `config:"simple_e"`
 	Debug       bool     `config:"debug_c"`
-	Database    Database `nested:"db"`
+	Database    Database `config:"db"`
 	ExampleType string
 }
 
