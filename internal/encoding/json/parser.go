@@ -1,4 +1,4 @@
-// Package json
+// Package json provides encoding and decoding functionality for JSON format.
 package json
 
 import (
@@ -7,6 +7,36 @@ import (
 	"strconv"
 )
 
+// Parser converts a sequence of tokens into an Abstract Syntax Tree (AST).
+//
+// This is the second phase of JSON parsing (syntax analysis). It takes the
+// flat list of tokens produced by the tokenizer and builds a hierarchical
+// tree structure that represents the JSON document.
+//
+// The parser uses recursive descent to build the AST:
+//   - parseValue: Entry point that dispatches to specific parsers
+//   - parseObject: Handles JSON objects
+//   - parseArray: Handles JSON arrays
+//   - Primitive values: Handled directly in parseValue
+//
+// Parameters:
+//   - tokens: Sequence of tokens from the tokenizer
+//
+// Returns:
+//   - ASTNode: Root node of the AST
+//   - error: An error if parsing fails (e.g., syntax error, unexpected token)
+//
+// Example:
+//
+//	tokens := []Token{
+//	    {Type: BraceOpen},
+//	    {Type: String, Value: []byte("name")},
+//	    {Type: Colon},
+//	    {Type: String, Value: []byte("John")},
+//	    {Type: BraceClose},
+//	}
+//	ast, err := Parser(tokens)
+//	// ast: ObjectNode{Value: {"name": StringNode{"John"}}}
 func Parser(tokens []Token) (ASTNode, error) {
 	if len(tokens) == 0 {
 		return nil, errors.New("nothing to parse")
@@ -15,6 +45,18 @@ func Parser(tokens []Token) (ASTNode, error) {
 	return parseValue(&current, tokens)
 }
 
+// parseValue parses any JSON value from the token stream.
+//
+// This is the main dispatcher that determines the type of value based on
+// the current token and calls the appropriate parsing function.
+//
+// Parameters:
+//   - current: Pointer to current position in token stream
+//   - tokens: Complete token stream
+//
+// Returns:
+//   - ASTNode: The parsed value as an AST node
+//   - error: An error if parsing fails
 func parseValue(current *int, tokens []Token) (ASTNode, error) {
 	if *current >= len(tokens) {
 		return nil, fmt.Errorf("unexpected end of input")
@@ -48,6 +90,17 @@ func parseValue(current *int, tokens []Token) (ASTNode, error) {
 	}
 }
 
+// parseObject parses a JSON object from the token stream.
+//
+// Expected token sequence: { "key" : value , "key" : value ... }
+//
+// Parameters:
+//   - current: Pointer to current position in token stream
+//   - tokens: Complete token stream
+//
+// Returns:
+//   - ASTNode: ObjectNode containing the parsed key-value pairs
+//   - error: An error if parsing fails
 func parseObject(current *int, tokens []Token) (ASTNode, error) {
 	node := ObjectNode{
 		Value: make(map[string]ASTNode),
@@ -91,6 +144,17 @@ func parseObject(current *int, tokens []Token) (ASTNode, error) {
 	return node, nil
 }
 
+// parseArray parses a JSON array from the token stream.
+//
+// Expected token sequence: [ value , value , value ... ]
+//
+// Parameters:
+//   - current: Pointer to current position in token stream
+//   - tokens: Complete token stream
+//
+// Returns:
+//   - ASTNode: ArrayNode containing the parsed elements
+//   - error: An error if parsing fails
 func parseArray(current *int, tokens []Token) (ASTNode, error) {
 	node := ArrayNode{
 		Value: make([]ASTNode, 0),
