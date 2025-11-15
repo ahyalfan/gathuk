@@ -125,7 +125,6 @@ func Tokenize(input []byte) ([]Token, error) {
 
 				num := input[start:current]
 
-				// Additional validation for bad exponent
 				if hasExp && expDigits == 0 {
 					return nil, fmt.Errorf("invalid number: exponent missing digits in '%s'", num)
 				}
