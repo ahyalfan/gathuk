@@ -1,0 +1,33 @@
+{
+  "id": 101,
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "roles": ["admin", "editor"],
+  "is_active": true,
+  "profile": {
+    "age": 29,
+    "gender": "female",
+    "address": {
+      "street": "Jl. Merdeka No.10",
+      "city": "Jakarta",
+      "country": "Indonesia",
+      "zip_code": "10110"
+    }
+  },
+  "transactions": [
+    {
+      "id": "TXN001",
+      "amount": 150000.75,
+      "currency": "IDR",
+      "status": "success",
+      "timestamp": "2025-11-13T10:15:00Z"
+    },
+    {
+      "id": "TXN002",
+      "amount": 50000.0,
+      "currency": "IDR",
+      "status": "pending",
+      "timestamp": "2025-11-13T12:30:00Z"
+    }
+  ]
+}
