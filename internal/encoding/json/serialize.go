@@ -1,4 +1,4 @@
-// Package json
+// Package json provides encoding and decoding functionality for JSON format.
 package json
 
 import (
@@ -7,6 +7,20 @@ import (
 	"strconv"
 )
 
+// escapeStringByte escapes special characters in a byte slice for JSON.
+//
+// Characters that need escaping:
+//   - " (quote) → \"
+//   - \ (backslash) → \\
+//   - \n (newline) → \\n
+//   - \t (tab) → \\t
+//   - \r (carriage return) → \\r
+//
+// Parameters:
+//   - s: The byte slice to escape
+//
+// Returns:
+//   - []byte: The escaped byte slice
 func escepeStringByte(s []byte) []byte {
 	result := []byte{}
 	for _, ch := range s {
@@ -28,6 +42,34 @@ func escepeStringByte(s []byte) []byte {
 	return result
 }
 
+// serialize converts an AST node to JSON bytes.
+//
+// This is the final step in the encoding pipeline, converting the
+// Abstract Syntax Tree representation into a valid JSON byte sequence.
+//
+// The serializer handles:
+//   - Proper JSON formatting (with optional pretty-printing)
+//   - String escaping (quotes, backslashes, newlines, etc.)
+//   - Number formatting
+//   - Boolean and null literals
+//
+// Parameters:
+//   - node: The root AST node to serialize
+//
+// Returns:
+//   - []byte: The JSON representation as bytes
+//   - error: An error if serialization fails
+//
+// Example:
+//
+//	ast := ObjectNode{
+//	    Value: map[string]ASTNode{
+//	        "name": StringNode{"John"},
+//	        "age": NumberNode{30},
+//	    },
+//	}
+//	data, err := codec.serialize(ast)
+//	// data: []byte(`{"name": "John", "age": 30}`)
 func (c *Codec[T]) serialize(node ASTNode) ([]byte, error) {
 	var buf bytes.Buffer
 	err := c.serializeNode(&buf, node, 0)
@@ -37,6 +79,15 @@ func (c *Codec[T]) serialize(node ASTNode) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// serializeNode recursively serializes an AST node to a buffer.
+//
+// Parameters:
+//   - buf: The buffer to write JSON bytes to
+//   - node: The AST node to serialize
+//   - depth: Current nesting depth (for pretty printing)
+//
+// Returns:
+//   - error: An error if serialization fails
 func (c *Codec[T]) serializeNode(buf *bytes.Buffer, node ASTNode, depth int) error {
 	switch n := node.(type) {
 	case ObjectNode:
@@ -58,6 +109,17 @@ func (c *Codec[T]) serializeNode(buf *bytes.Buffer, node ASTNode, depth int) err
 	return nil
 }
 
+// serializeObject serializes an ObjectNode to JSON format.
+//
+// Output format: {"key": value, "key": value}
+//
+// Parameters:
+//   - buf: The buffer to write to
+//   - obj: The ObjectNode to serialize
+//   - depth: Current nesting depth
+//
+// Returns:
+//   - error: An error if serialization fails
 func (c *Codec[T]) serializeObject(buf *bytes.Buffer, obj ObjectNode, depth int) error {
 	buf.WriteByte('{')
 
@@ -85,6 +147,17 @@ func (c *Codec[T]) serializeObject(buf *bytes.Buffer, obj ObjectNode, depth int)
 	return nil
 }
 
+// serializeArray serializes an ArrayNode to JSON format.
+//
+// Output format: [value, value, value]
+//
+// Parameters:
+//   - buf: The buffer to write to
+//   - arr: The ArrayNode to serialize
+//   - depth: Current nesting depth
+//
+// Returns:
+//   - error: An error if serialization fails
 func (c *Codec[T]) serializeArray(buf *bytes.Buffer, arr ArrayNode, depth int) error {
 	buf.WriteByte('[')
 
@@ -101,6 +174,21 @@ func (c *Codec[T]) serializeArray(buf *bytes.Buffer, arr ArrayNode, depth int) e
 	return nil
 }
 
+// serializeString serializes a StringNode to JSON format.
+//
+// Handles proper escaping of special characters:
+//   - " → \"
+//   - \ → \\
+//   - \n → \\n
+//   - \t → \\t
+//   - \r → \\r
+//
+// Parameters:
+//   - buf: The buffer to write to
+//   - str: The StringNode to serialize
+//
+// Returns:
+//   - error: An error if serialization fails
 func (c *Codec[T]) serializeString(buf *bytes.Buffer, str StringNode) error {
 	escape := escepeStringByte([]byte(str.Value))
 	buf.WriteByte('"')
@@ -109,11 +197,29 @@ func (c *Codec[T]) serializeString(buf *bytes.Buffer, str StringNode) error {
 	return nil
 }
 
+// serializeNumber serializes a NumberNode to JSON format.
+//
+// Parameters:
+//   - buf: The buffer to write to
+//   - num: The NumberNode to serialize
+//
+// Returns:
+//   - error: An error if serialization fails
 func (c *Codec[T]) serializeNumber(buf *bytes.Buffer, num NumberNode) error {
 	buf.WriteString(strconv.FormatFloat(num.Value, 'g', -1, 64))
 	return nil
 }
 
+// serializeBoolean serializes a BooleanNode to JSON format.
+//
+// Output: "true" or "false"
+//
+// Parameters:
+//   - buf: The buffer to write to
+//   - bool: The BooleanNode to serialize
+//
+// Returns:
+//   - error: An error if serialization fails
 func (c *Codec[T]) serializeBoolean(buf *bytes.Buffer, bool BooleanNode) error {
 	if bool.Value {
 		buf.WriteString("true")
@@ -123,6 +229,15 @@ func (c *Codec[T]) serializeBoolean(buf *bytes.Buffer, bool BooleanNode) error {
 	return nil
 }
 
+// serializeNull serializes a NullNode to JSON format.
+//
+// Output: "null"
+//
+// Parameters:
+//   - buf: The buffer to write to
+//
+// Returns:
+//   - error: An error if serialization fails
 func (c *Codec[T]) serializeNull(buf *bytes.Buffer) error {
 	buf.WriteString("null")
 	return nil

@@ -1,4 +1,4 @@
-// Package json
+// Package json provides encoding and decoding functionality for JSON format.
 package json
 
 import (
@@ -11,6 +11,33 @@ import (
 	"github.com/ahyalfan/gathuk/shared"
 )
 
+// StructToAST converts a Go struct to an AST node.
+//
+// This method uses reflection to traverse the struct and build an
+// equivalent AST representation. It handles:
+//   - Nested structs → ObjectNode
+//   - Slices/arrays → ArrayNode
+//   - Maps → ObjectNode
+//   - Primitive types → StringNode, NumberNode, BooleanNode
+//   - Struct tags for custom field names
+//
+// Parameters:
+//   - value: Pointer to the struct to convert
+//
+// Returns:
+//   - ASTNode: The root AST node representing the struct
+//   - error: An error if conversion fails
+//
+// Example:
+//
+//	type Config struct {
+//	    Port int    `config:"port"`
+//	    Host string `config:"host"`
+//	}
+//
+//	config := &Config{Port: 8080, Host: "localhost"}
+//	ast, err := codec.StructToAST(config)
+//	// ast: ObjectNode{Value: {"port": NumberNode{8080}, "host": StringNode{"localhost"}}}
 func (c *Codec[T]) StructToAST(value *T) (ASTNode, error) {
 	if value == nil {
 		return NullNode{}, nil
@@ -22,6 +49,18 @@ func (c *Codec[T]) StructToAST(value *T) (ASTNode, error) {
 	return c.valueToNode(rv.Elem(), "")
 }
 
+// valueToNode converts a reflect.Value to an AST node.
+//
+// This is a helper method used during struct-to-AST conversion.
+// It handles the conversion of Go values to their AST representations.
+//
+// Parameters:
+//   - v: The reflect.Value to convert
+//   - path: Current path in the struct (for error reporting)
+//
+// Returns:
+//   - ASTNode: The converted AST node
+//   - error: An error if conversion fails
 func (c *Codec[T]) valueToNode(v reflect.Value, path string) (ASTNode, error) {
 	if v.Kind() == reflect.Interface {
 		if v.IsNil() {
@@ -145,6 +184,35 @@ func (c *Codec[T]) mapToNode(v reflect.Value, path string) (ASTNode, error) {
 	return ObjectNode{Value: obj}, nil
 }
 
+// ASTToStruct converts an AST node to a Go struct.
+//
+// This method uses reflection to populate a struct from an AST. It handles:
+//   - ObjectNode → struct
+//   - ArrayNode → slice
+//   - ObjectNode → map (if target is map)
+//   - Primitive nodes → basic Go types
+//   - Type conversions (string → int, etc.)
+//   - Struct tags for field mapping
+//
+// Parameters:
+//   - node: The AST node to convert
+//   - v: Pointer to the destination struct
+//
+// Returns:
+//   - error: An error if conversion fails
+//
+// Example:
+//
+//	ast := ObjectNode{
+//	    Value: map[string]ASTNode{
+//	        "port": NumberNode{8080},
+//	        "host": StringNode{"localhost"},
+//	    },
+//	}
+//
+//	var config Config
+//	err := codec.ASTToStruct(ast, &config)
+//	// config: Config{Port: 8080, Host: "localhost"}
 func (c *Codec[T]) ASTToStruct(node ASTNode, v *T) error {
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
@@ -153,6 +221,19 @@ func (c *Codec[T]) ASTToStruct(node ASTNode, v *T) error {
 	return c.nodeToValue(node, rv.Elem(), "")
 }
 
+// nodeToValue converts an AST node to a reflect.Value.
+//
+// This is a helper method used during AST-to-struct conversion.
+// It handles the conversion of AST nodes to Go values with proper
+// type checking and conversion.
+//
+// Parameters:
+//   - node: The AST node to convert
+//   - v: The target reflect.Value
+//   - path: Current path in the struct (for error reporting)
+//
+// Returns:
+//   - error: An error if conversion fails
 func (c *Codec[T]) nodeToValue(node ASTNode, v reflect.Value, path string) error {
 	if !v.CanSet() {
 		return c.newError(path, "value not settable")
@@ -361,7 +442,24 @@ func (c *Codec[T]) numberValue(f float64, v reflect.Value, path string) error {
 	return c.newError(path, "cannot unmarshal number %g into %s", f, v.Type())
 }
 
-// toNative converts ASTNode to native Go types (for interface{})
+// toNative converts an AST node to native Go types for interface{}.
+//
+// This method is used when the target type is interface{} or any.
+// It converts AST nodes to appropriate Go types:
+//   - StringNode → string
+//   - NumberNode → float64
+//   - BooleanNode → bool
+//   - NullNode → nil
+//   - ArrayNode → []interface{}
+//   - ObjectNode → map[string]interface{}
+//
+// Parameters:
+//   - node: The AST node to convert
+//   - path: Current path (for error reporting)
+//
+// Returns:
+//   - interface{}: The converted native Go value
+//   - error: An error if conversion fails
 func (c *Codec[T]) toNative(node ASTNode, path string) (interface{}, error) {
 	switch n := node.(type) {
 	case StringNode:
@@ -401,6 +499,19 @@ func (c *Codec[T]) toNative(node ASTNode, path string) (interface{}, error) {
 	}
 }
 
+// newError creates a formatted error with path information.
+//
+// This helper method is used throughout the mapper to create
+// informative error messages that include the path to the problematic
+// field.
+//
+// Parameters:
+//   - path: Path to the field where error occurred
+//   - format: Error message format string
+//   - args: Format arguments
+//
+// Returns:
+//   - error: Formatted error with path context
 func (c *Codec[T]) newError(path, format string, args ...interface{}) error {
 	if path != "" {
 		return fmt.Errorf("ast unmarshal error at %s: %w", path, fmt.Errorf(format, args...))

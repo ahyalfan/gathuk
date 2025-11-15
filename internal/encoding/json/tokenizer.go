@@ -1,4 +1,4 @@
-// Package json
+// Package json provides encoding and decoding functionality for JSON format.
 package json
 
 import (
@@ -8,6 +8,35 @@ import (
 	"unicode"
 )
 
+// Tokenize converts JSON bytes into a sequence of tokens.
+//
+// This is the first phase of JSON parsing (lexical analysis). It scans the
+// input and produces a flat list of tokens that represent the structure and
+// values in the JSON.
+//
+// Supported tokens:
+//   - Structural: { } [ ] : ,
+//   - Literals: "string", 123, true, false, null
+//
+// The tokenizer handles:
+//   - Whitespace (spaces, tabs, newlines) - ignored
+//   - String literals with proper quote handling
+//   - Numbers (integers, floats, scientific notation)
+//   - Boolean literals (true, false)
+//   - Null literal
+//
+// Parameters:
+//   - input: JSON bytes to tokenize
+//
+// Returns:
+//   - []Token: Sequence of tokens
+//   - error: An error if tokenization fails (e.g., unterminated string, invalid number)
+//
+// Example:
+//
+//	input := []byte(`{"name": "John", "age": 30}`)
+//	tokens, err := Tokenize(input)
+//	// tokens: [{BraceOpen}, {String "name"}, {Colon}, {String "John"}, ...]
 func Tokenize(input []byte) ([]Token, error) {
 	var (
 		current     = 0
