@@ -12,6 +12,7 @@ var (
 	EXAMPLE_ENV_FILE   string = "./example/dotenv/.example.env"
 	EXAMPLE_2_ENV_file string = "./example/dotenv/.example_2.env"
 	EXAMPLE_1_ENV_file string = "./example/dotenv/.example_1.env"
+	EXAMPLE_JSON_file  string = "./example/json/example.json"
 )
 
 type Simple struct {
@@ -22,7 +23,7 @@ type Simple struct {
 type Simple2 struct {
 	Simplee     int      `config:"simple_e"`
 	Debug       bool     `config:"debug_c"`
-	Database    Database `nested:"db"`
+	Database    Database `config:"db"`
 	ExampleType string
 }
 
@@ -41,6 +42,37 @@ type Simple3 struct {
 	Editor      string
 }
 
+type User struct {
+	ID           int           `config:"id"`
+	Name         string        `config:"name"`
+	Email        string        `config:"email"`
+	Roles        []string      `config:"roles"`
+	IsActive     bool          `config:"is_active"`
+	Profile      Profile       `config:"profile"`
+	Transactions []Transaction `config:"transactions"`
+}
+
+type Profile struct {
+	Age     int     `config:"age"`
+	Gender  string  `config:"gender"`
+	Address Address `config:"address"`
+}
+
+type Address struct {
+	Street  string `config:"street"`
+	City    string `config:"city"`
+	Country string `config:"country"`
+	ZipCode string `config:"zip_code"`
+}
+
+type Transaction struct {
+	ID        string  `config:"id"`
+	Amount    float64 `config:"amount"`
+	Currency  string  `config:"currency"`
+	Status    string  `config:"status"`
+	Timestamp string  `config:"timestamp"`
+}
+
 func TestGathukLoad(t *testing.T) {
 	t.Run("Test 1 : Simple Load Gathuk config", func(t *testing.T) {
 		gt := NewGathuk[Simple]()
@@ -49,6 +81,19 @@ func TestGathukLoad(t *testing.T) {
 		customtests.OK(t, err)
 		customtests.Equals(t, "hore", gt.GetConfig().SimpleC)
 		customtests.Equals(t, 2, gt.GetConfig().SimpleE)
+		gt2 := NewGathuk[User]()
+
+		err = gt2.LoadConfigFiles(EXAMPLE_JSON_file)
+		customtests.OK(t, err)
+		customtests.Equals(t, "John Doe", gt2.GetConfig().Name)
+		customtests.Equals(t, 1, gt2.GetConfig().ID)
+		customtests.Equals(t, "john@example.com", gt2.GetConfig().Email)
+		customtests.Equals(t, true, gt2.GetConfig().IsActive)
+
+		gt3 := NewGathuk[struct{}]()
+		err = gt3.LoadConfigFiles(EXAMPLE_JSON_file)
+		customtests.OK(t, err)
+		customtests.Equals(t, struct{}{}, gt3.value)
 	})
 	t.Run("Test 2 : Nested Struct Load Gathuk config", func(t *testing.T) {
 		gt := NewGathuk[Simple2]()
@@ -140,6 +185,10 @@ func TestGathukWrite(t *testing.T) {
 		err := gt.writeFile("example/dotenv/example_12.env", 0, Simple{
 			SimpleC: "hore",
 			SimpleE: 100,
+		})
+		gt.writeFile("example/json/example_12.json", 0, Simple{
+			SimpleC: "gore",
+			SimpleE: 1000,
 		})
 		customtests.OK(t, err)
 	})

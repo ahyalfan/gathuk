@@ -16,3 +16,11 @@ func GetTagName() Tag {
 func GetTagNestedName() Tag {
 	return nestedName
 }
+
+func SetTagName(tagName string) {
+	name = Tag(tagName)
+}
+
+func SetTagNestedName(tagNestedName string) {
+	nestedName = Tag(tagNestedName)
+}

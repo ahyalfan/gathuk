@@ -31,3 +31,19 @@ func PascalToUpperSnakeCase(s string) string {
 	}
 	return result.String()
 }
+
+// PascalToLowerSnakeCase converts a string from PascalCase to lower_snake_case.
+func PascalToLowerSnakeCase(s string) string {
+	var result strings.Builder
+	for i, r := range s {
+		if unicode.IsUpper(r) {
+			if i > 0 { // Add underscore before uppercase letters, except for the first character
+				result.WriteRune('_')
+			}
+			result.WriteRune(unicode.ToLower(r))
+		} else {
+			result.WriteRune(r)
+		}
+	}
+	return result.String()
+}
