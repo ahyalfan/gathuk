@@ -2,8 +2,10 @@
 package dotenv
 
 import (
-	"os"
+	"fmt"
+	"log"
 	"reflect"
+	"strconv"
 	"strings"
 
 	utility "github.com/ahyalfan/gathuk/internal/utils"
@@ -30,9 +32,9 @@ func (c *Codec[T]) scanWithNestedPrefix(v *T) error {
 
 	vt := reflect.ValueOf(v).Elem()
 	parent := reflect.TypeOf(v)
-	c.scanNestedWithNestedPrefix(parent, vt, "")
+	err := c.scanNestedWithNestedPrefix(parent, vt, "")
 
-	return nil
+	return err
 }
 
 // scanNestedWithNestedPrefix recursively scans a struct and populates its fields
@@ -50,76 +52,237 @@ func (c *Codec[T]) scanWithNestedPrefix(v *T) error {
 //   - nestedPrefix: The prefix to prepend to field names (e.g., "DB_" for nested database config)
 func (c *Codec[T]) scanNestedWithNestedPrefix(
 	parent reflect.Type, v reflect.Value, nestedPrefix string,
-) {
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		structField := v.Type().Field(i)
+) error {
+	if !v.CanSet() {
+		return newError(nestedPrefix, "value not settable")
+	}
 
-		if structField.Type.Kind() == reflect.Struct && structField.Type != parent {
-			nestedName := structField.Tag.Get(string(shared.GetTagNestedName()))
-			if nestedName == "-" {
+	switch v.Kind() {
+	case reflect.Interface:
+		native, err := c.toNative(nestedPrefix)
+		if err != nil {
+			return err
+		}
+		v.Set(reflect.ValueOf(native))
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Field(i)
+			structField := v.Type().Field(i)
+
+			if structField.Type.Kind() == reflect.Struct && structField.Type != parent {
+				nestedName := structField.Tag.Get(string(shared.GetTagNestedName()))
+				if nestedName == "-" {
+					continue
+				}
+				if nestedName == "" {
+					nestedName = structField.Tag.Get(string(shared.GetTagName()))
+				}
+				if nestedName == "" {
+					nestedName = utility.PascalToUpperSnakeCase(structField.Name)
+				}
+				if nestedPrefix != "" {
+					nestedName = nestedPrefix + "_" + nestedName
+				}
+				err := c.scanNestedWithNestedPrefix(parent, field, nestedName)
+				if err != nil {
+					return err
+				}
 				continue
 			}
-			if nestedName == "" {
-				nestedName = structField.Tag.Get(string(shared.GetTagName()))
+
+			var name string
+			name = structField.Tag.Get(string(shared.GetTagName()))
+			if name == "-" {
+				continue
 			}
-			if nestedName == "" {
-				nestedName = utility.PascalToUpperSnakeCase(structField.Name)
+			if name == "" {
+				name = utility.PascalToUpperSnakeCase(structField.Name)
 			}
+
 			if nestedPrefix != "" {
-				nestedName = nestedPrefix + "_" + nestedName
+				sub := nestedPrefix + "_"
+				name = sub + name
 			}
-			c.scanNestedWithNestedPrefix(parent, field, nestedName)
-			continue
-		}
+			name = strings.ToUpper(name)
 
-		var name string
-		name = structField.Tag.Get(string(shared.GetTagName()))
-		if name == "-" {
-			continue
-		}
-		if name == "" {
-			name = utility.PascalToUpperSnakeCase(structField.Name)
-		}
+			val, ok := c.temp[name]
 
-		if nestedPrefix != "" {
-			sub := nestedPrefix + "_"
-			name = sub + name
-		}
-		name = strings.ToUpper(name)
-
-		var (
-			val []byte
-			ok  bool
-		)
-
-		if c.do.AutomaticEnv {
-			if c.do.PreferFileOverEnv {
-
-				val, ok = c.temp[name]
-				if !ok {
-					r := os.Getenv(name)
-					if r != "" {
-						val, ok = []byte(r), true
-					}
-				}
-			} else {
-				r := os.Getenv(name)
-				if r == "" {
-					val, ok = c.temp[name]
-				} else {
-					val, ok = []byte(r), true
-				}
-
+			if !ok || !field.CanSet() {
+				continue
 			}
-		} else {
-			val, ok = c.temp[name]
-		}
 
-		if !ok || !field.CanSet() {
-			continue
+			err := setValue(field, string(val))
+			if err != nil {
+				return err
+			}
 		}
-
-		setValue(field, string(val))
+	case reflect.Map:
+		err := c.toMap(v, nestedPrefix)
+		if err != nil {
+			return err
+		}
+	default:
+		newError(nestedPrefix, "unsupported type: %v+", v.Type())
 	}
+
+	return nil
+}
+
+func (c *Codec[T]) toMap(v reflect.Value, prefix string) error {
+	if v.Type().Key().Kind() != reflect.String {
+		return newError(prefix, "map key must be string, got %s", v.Type().Key())
+	}
+
+	mapType := v.Type()
+	newMap := reflect.MakeMap(mapType)
+
+	for k, v := range c.temp {
+		if prefix != "" {
+			if !strings.HasPrefix(k, prefix) {
+				continue
+			}
+		}
+		nested := prefix + "_" + k
+		if prefix == "" {
+			nested = k
+		}
+
+		elemValue := reflect.New(mapType.Elem()).Elem()
+
+		err := setValue(elemValue, string(v))
+		if err != nil {
+			return err
+		}
+
+		newMap.SetMapIndex(reflect.ValueOf(nested), elemValue)
+	}
+	v.Set(newMap)
+	return nil
+}
+
+func (c *Codec[T]) toNative(prefix string) (any, error) {
+	m := make(map[string]any)
+	for k, v := range c.temp {
+		if prefix != "" {
+			if !strings.HasPrefix(k, prefix) {
+				continue
+			}
+		}
+		var converted any
+		err := setValue(reflect.ValueOf(&converted).Elem(), string(v))
+		if err != nil {
+			return nil, newError(prefix, "%v", err)
+		}
+		m[k] = converted
+	}
+	return m, nil
+}
+
+// setValue sets a struct field value from a string using reflection.
+//
+// This function handles type conversion from string to the appropriate Go type.
+// It supports pointer types by automatically dereferencing them.
+//
+// Supported types:
+//   - string: Direct assignment
+//   - int, int64: Parsed as base-10 integer
+//   - float64: Parsed as floating-point number
+//   - bool: Parsed as boolean (true/false)
+//   - any: Parsed any value
+//
+// Parameters:
+//   - field: The reflect.Value of the field to set
+//   - val: The string value to convert and assign
+//
+// return error if type conversion fails.
+func setValue(field reflect.Value, val string) error {
+	if field.Kind() == reflect.Ptr {
+		if field.IsNil() {
+			field.Set(reflect.New(field.Type().Elem()))
+		}
+		field = field.Elem()
+	}
+
+	// Basic kinds
+	switch field.Kind() {
+	case reflect.String:
+		field.SetString(val)
+	case reflect.Int, reflect.Int64:
+		i64, err := strconv.ParseInt(val, 0, 64)
+		if err != nil {
+			return newError("", "convert string to int error: %+v", err)
+		}
+		field.SetInt(i64)
+	case reflect.Float64:
+		f64, err := strconv.ParseFloat(val, 64)
+		if err != nil {
+			return newError("", "convert string to float error: %+v", err)
+		}
+		field.SetFloat(f64)
+	case reflect.Bool:
+		bVal, err := strconv.ParseBool(val)
+		if err != nil {
+			return newError("", "convert string to bool error: %+v", err)
+		}
+		field.SetBool(bVal)
+	case reflect.Interface:
+		var converted any
+		if b, err := strconv.ParseBool(val); err == nil {
+			converted = b
+		} else if i, err := strconv.ParseInt(val, 10, 64); err == nil {
+			converted = i
+		} else if f, err := strconv.ParseFloat(val, 64); err == nil {
+			converted = f
+		} else {
+			converted = val
+		}
+
+		field.Set(reflect.ValueOf(converted))
+	}
+	return nil
+}
+
+func setValueAny(field reflect.Value, val any) {
+	if field.Kind() == reflect.Ptr {
+		if field.IsNil() {
+			field.Set(reflect.New(field.Type().Elem()))
+		}
+		field = field.Elem()
+	}
+
+	// Basic kinds
+	switch field.Kind() {
+	case reflect.String:
+		s, ok := val.(string)
+		if !ok {
+			return
+		}
+		field.SetString(s)
+
+	case reflect.Int, reflect.Int64:
+		i64, ok := val.(int)
+		if !ok {
+			log.Fatalf("convert string to int error: %+v", ok)
+		}
+		field.SetInt(int64(i64))
+	case reflect.Float64:
+		f64, ok := val.(float64)
+		if !ok {
+			log.Fatalf("convert string to float error: %+v", ok)
+		}
+		field.SetFloat(f64)
+	case reflect.Bool:
+		bVal, ok := val.(bool)
+		if !ok {
+			log.Fatalf("convert string to bool error: %+v", ok)
+		}
+		field.SetBool(bVal)
+	}
+}
+
+func newError(path, format string, args ...any) error {
+	if path != "" {
+		return fmt.Errorf("ast unmarshal error at %s: %w", path, fmt.Errorf(format, args...))
+	}
+	return fmt.Errorf("ast unmarshal error: "+format, args...)
 }

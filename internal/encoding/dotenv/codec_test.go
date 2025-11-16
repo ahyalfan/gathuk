@@ -12,7 +12,7 @@ import (
 
 type Example struct {
 	Hello string
-	Holla string
+	Holla any
 }
 
 func TestCodec(t *testing.T) {
@@ -27,6 +27,30 @@ func TestCodec(t *testing.T) {
 
 	customtests.OK(t, err)
 	fmt.Println(got)
+
+	cdcAny := Codec[any]{}
+	cdcAny.ApplyDecodeOption(&option.DecodeOption{
+		AutomaticEnv: false,
+	})
+	var gotAny any
+	err = cdcAny.Decode([]byte(
+		`HELLO=apa
+		 HOLLA=1a`), &gotAny)
+
+	customtests.OK(t, err)
+	fmt.Println(gotAny)
+
+	cdcMap := Codec[map[string]any]{}
+	cdcMap.ApplyDecodeOption(&option.DecodeOption{
+		AutomaticEnv: false,
+	})
+	var gotMap map[string]any
+	err = cdcMap.Decode([]byte(
+		`HELLO=apa
+		 HOLLA=1a`), &gotMap)
+
+	customtests.OK(t, err)
+	fmt.Println(gotMap)
 
 	t.Run("Test 2: Encode", func(t *testing.T) {
 		cdc := Codec[Example]{}
