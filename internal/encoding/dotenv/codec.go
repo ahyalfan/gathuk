@@ -39,7 +39,6 @@ package dotenv
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -256,6 +255,22 @@ func (c *Codec[T]) Decode(buf []byte, val *T) error {
 		}
 	}
 
+	if c.do.AutomaticEnv {
+		if c.do.PreferFileOverEnv {
+			for _, e := range os.Environ() {
+				pair := strings.SplitN(e, "=", 2)
+				if _, ok := c.temp[pair[0]]; !ok {
+					c.temp[pair[0]] = []byte(pair[1])
+				}
+			}
+		} else {
+			for _, e := range os.Environ() {
+				pair := strings.SplitN(e, "=", 2)
+				c.temp[pair[0]] = []byte(pair[1])
+			}
+		}
+	}
+
 	err := c.scanWithNestedPrefix(val)
 
 	return err
@@ -335,93 +350,6 @@ func (c *Codec[T]) flattenNestedWithNestedPrefix(
 		name = strings.ToUpper(name)
 
 		c.temp[name] = parseToBytes(field)
-	}
-}
-
-// setValue sets a struct field value from a string using reflection.
-//
-// This function handles type conversion from string to the appropriate Go type.
-// It supports pointer types by automatically dereferencing them.
-//
-// Supported types:
-//   - string: Direct assignment
-//   - int, int64: Parsed as base-10 integer
-//   - float64: Parsed as floating-point number
-//   - bool: Parsed as boolean (true/false)
-//
-// Parameters:
-//   - field: The reflect.Value of the field to set
-//   - val: The string value to convert and assign
-//
-// Logs a fatal error if type conversion fails.
-func setValue(field reflect.Value, val string) {
-	if field.Kind() == reflect.Ptr {
-		if field.IsNil() {
-			field.Set(reflect.New(field.Type().Elem()))
-		}
-		field = field.Elem()
-	}
-
-	// Basic kinds
-	switch field.Kind() {
-	case reflect.String:
-		field.SetString(val)
-	case reflect.Int, reflect.Int64:
-		i64, err := strconv.ParseInt(val, 0, 64)
-		if err != nil {
-			log.Fatalf("convert string to int error: %+v", err)
-		}
-		field.SetInt(i64)
-	case reflect.Float64:
-		f64, err := strconv.ParseFloat(val, 64)
-		if err != nil {
-			log.Fatalf("convert string to float error: %+v", err)
-		}
-		field.SetFloat(f64)
-	case reflect.Bool:
-		bVal, err := strconv.ParseBool(val)
-		if err != nil {
-			log.Fatalf("convert string to bool error: %+v", err)
-		}
-		field.SetBool(bVal)
-	}
-}
-
-func setValueAny(field reflect.Value, val any) {
-	if field.Kind() == reflect.Ptr {
-		if field.IsNil() {
-			field.Set(reflect.New(field.Type().Elem()))
-		}
-		field = field.Elem()
-	}
-
-	// Basic kinds
-	switch field.Kind() {
-	case reflect.String:
-		s, ok := val.(string)
-		if !ok {
-			return
-		}
-		field.SetString(s)
-
-	case reflect.Int, reflect.Int64:
-		i64, ok := val.(int)
-		if !ok {
-			log.Fatalf("convert string to int error: %+v", ok)
-		}
-		field.SetInt(int64(i64))
-	case reflect.Float64:
-		f64, ok := val.(float64)
-		if !ok {
-			log.Fatalf("convert string to float error: %+v", ok)
-		}
-		field.SetFloat(f64)
-	case reflect.Bool:
-		bVal, ok := val.(bool)
-		if !ok {
-			log.Fatalf("convert string to bool error: %+v", ok)
-		}
-		field.SetBool(bVal)
 	}
 }
 

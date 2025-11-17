@@ -68,12 +68,22 @@ func TestCodec(t *testing.T) {
 	}
 
 	cdc := Codec[MyStruct]{}
+	cdcAny := Codec[any]{}
+	// cdcMap := Codec[map[string]any]{}
 
 	var result MyStruct
-	err := cdc.ASTToStruct(ast, &result)
+	var resultAny any
 
+	err := cdc.ASTToStruct(ast, &result)
 	customtests.OK(t, err)
+	err = cdcAny.ASTToStruct(ast, &resultAny)
+	customtests.OK(t, err)
+
 	fmt.Printf("%+v\n", result)
+	fmt.Printf("%+v\n", resultAny)
+	m := resultAny.(map[string]interface{})
+	name := m["name"].(string)
+	fmt.Printf("%s\n", name)
 
 	t.Run("encode", func(t *testing.T) {
 		b, err := cdc.Encode(result)

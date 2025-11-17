@@ -2,6 +2,7 @@
 package gathuk
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -90,10 +91,19 @@ func TestGathukLoad(t *testing.T) {
 		customtests.Equals(t, "john@example.com", gt2.GetConfig().Email)
 		customtests.Equals(t, true, gt2.GetConfig().IsActive)
 
-		gt3 := NewGathuk[struct{}]()
-		err = gt3.LoadConfigFiles(EXAMPLE_JSON_file)
+		gt3 := NewGathuk[any]()
+
+		err = gt3.LoadConfigFiles(EXAMPLE_ENV_FILE)
 		customtests.OK(t, err)
-		customtests.Equals(t, struct{}{}, gt3.value)
+		mapValue := gt3.GetConfig().(map[string]any)
+		customtests.Equals(t, "hore", mapValue["SIMPLE_C"])
+
+		gt4 := NewGathuk[map[string]any]()
+
+		err = gt4.LoadConfigFiles(EXAMPLE_JSON_file)
+		customtests.OK(t, err)
+		mapValue1 := gt4.GetConfig()
+		customtests.Equals(t, "John Doe", mapValue1["name"])
 	})
 	t.Run("Test 2 : Nested Struct Load Gathuk config", func(t *testing.T) {
 		gt := NewGathuk[Simple2]()
@@ -121,6 +131,20 @@ func TestGathukLoad(t *testing.T) {
 		customtests.Equals(t, "halo", gt.GetConfig().Database.Server)
 		customtests.Equals(t, 200, gt.GetConfig().Database.PoolingMax)
 		customtests.Equals(t, "senin", gt.GetConfig().ExampleType)
+
+		gt2 := NewGathuk[any]()
+		// gt2 := NewGathuk[map[string]any]() // if any or map, merge not valid
+
+		gt2.SetConfigFiles(EXAMPLE_ENV_FILE)
+		err = gt2.LoadConfigFiles(EXAMPLE_1_ENV_file)
+		// err := gt.LoadConfigFiles(EXAMPLE_ENV_FILE, EXAMPLE_1_ENV_file) // still works
+		customtests.OK(t, err)
+
+		mapValue := gt2.GetConfig().(map[string]any)
+		fmt.Printf("%#v (%T)\n", mapValue["DB_POLING_MAX_POOL"], mapValue["DB_POLING_MAX_POOL"])
+		customtests.Equals(t, int64(200), mapValue["DB_POLING_MAX_POOL"])
+		customtests.Equals(t, "senin", mapValue["EXAMPLE_TYPE"])
+		customtests.Equals(t, nil, mapValue["DB_SERVER"])
 	})
 
 	t.Run("Test 4 : Load Gathuk config and option global", func(t *testing.T) {
@@ -182,7 +206,7 @@ func TestGathukWrite(t *testing.T) {
 	t.Run("Test 1: simple write config", func(t *testing.T) {
 		gt := NewGathuk[Simple]()
 
-		err := gt.writeFile("example/dotenv/example_12.env", 0, Simple{
+		err := gt.writeFile("example/dotenv/.example_12.env", 0, Simple{
 			SimpleC: "hore",
 			SimpleE: 100,
 		})
