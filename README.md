@@ -990,10 +990,10 @@ err := gt.LoadConfigFiles(configFiles...)
 
 ```go
 type Config struct {
-    Server   ServerConfig   `nested:"server"`
-    Database DatabaseConfig `nested:"db"`
-    Redis    RedisConfig    `nested:"redis"`
-    Logging  LogConfig      `nested:"log"`
+    Server   ServerConfig   `config:"server"`
+    Database DatabaseConfig `config:"db"`
+    Redis    RedisConfig    `config:"redis"`
+    Logging  LogConfig      `config:"log"`
 }
 
 type ServerConfig struct {
@@ -1110,11 +1110,11 @@ LOG_FORMAT=text
 
 ```go
 type Config struct {
-    Service     ServiceConfig     `nested:"service"`
-    HTTP        HTTPConfig        `nested:"http"`
-    GRPC        GRPCConfig        `nested:"grpc"`
-    Observability ObservabilityConfig `nested:"obs"`
-    Dependencies  DependenciesConfig  `nested:"deps"`
+    Service     ServiceConfig     `config:"service"`
+    HTTP        HTTPConfig        `config:"http"`
+    GRPC        GRPCConfig        `config:"grpc"`
+    Observability ObservabilityConfig `config:"obs"`
+    Dependencies  DependenciesConfig  `config:"deps"`
 }
 
 type ServiceConfig struct {
@@ -1136,9 +1136,9 @@ type GRPCConfig struct {
 }
 
 type ObservabilityConfig struct {
-    Metrics   MetricsConfig   `nested:"metrics"`
-    Tracing   TracingConfig   `nested:"tracing"`
-    Logging   LoggingConfig   `nested:"logging"`
+    Metrics   MetricsConfig   `config:"metrics"`
+    Tracing   TracingConfig   `config:"tracing"`
+    Logging   LoggingConfig   `config:"logging"`
 }
 
 type MetricsConfig struct {
@@ -1159,9 +1159,9 @@ type LoggingConfig struct {
 }
 
 type DependenciesConfig struct {
-    Database DatabaseConfig `nested:"db"`
-    Cache    CacheConfig    `nested:"cache"`
-    Queue    QueueConfig    `nested:"queue"`
+    Database DatabaseConfig `config:"db"`
+    Cache    CacheConfig    `config:"cache"`
+    Queue    QueueConfig    `config:"queue"`
 }
 
 type DatabaseConfig struct {
@@ -1246,10 +1246,10 @@ func validateConfig(cfg *Config) error {
 
 ```go
 type Config struct {
-    App      AppConfig      `nested:"app"`
-    API      APIConfig      `nested:"api"`
-    Output   OutputConfig   `nested:"output"`
-    Advanced AdvancedConfig `nested:"advanced"`
+    App      AppConfig      `config:"app"`
+    API      APIConfig      `config:"api"`
+    Output   OutputConfig   `config:"output"`
+    Advanced AdvancedConfig `config:"advanced"`
 }
 
 type AppConfig struct {
@@ -1853,7 +1853,7 @@ func LoadConfig(files ...string) (*Config, error) {
 
 ```go
 type Config struct {
-    Features FeatureFlags `nested:"feature"`
+    Features FeatureFlags `config:"feature"`
 }
 
 type FeatureFlags struct {
