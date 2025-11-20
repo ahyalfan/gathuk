@@ -145,7 +145,7 @@ Defines prefix for nested structures:
 type Config struct {
     // All Database fields will have DB_ prefix in .env
     // In JSON: nested under "db" object
-    Database Database `nested:"db"` // priority
+    Database Database `config:"db"`
     // or
     // Database Database `config:"db"`
 }
