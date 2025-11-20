@@ -128,6 +128,28 @@ func (c *Codec[T]) scanNestedWithNestedPrefix(
 	return nil
 }
 
+// toMap converts the parsed key-value pairs into a map[string]V where V is the map value type.
+//
+// This method is used when the target type is a map instead of a struct.
+// It filters keys by prefix if provided and converts string values to the appropriate type.
+//
+// For .env files, all keys are stored in UPPER_SNAKE_CASE format. If a prefix is provided,
+// only keys that start with that prefix will be included in the resulting map.
+//
+// The map key in the result includes the prefix, so for prefix "DB_" and key "DB_HOST",
+// the map will contain "DB_HOST" as the key (not just "HOST").
+//
+// Type conversion is handled automatically:
+//   - If the target map value type is string, values are used as-is
+//   - If the target type is int/float/bool, string values are parsed accordingly
+//   - If parsing fails, an error is returned
+//
+// Parameters:
+//   - v: The reflect.Value of the map to populate
+//   - prefix: Optional prefix to filter keys (e.g., "DB_" for database configs)
+//
+// Returns:
+//   - error: An error if type conversion or map creation fails
 func (c *Codec[T]) toMap(v reflect.Value, prefix string) error {
 	if v.Type().Key().Kind() != reflect.String {
 		return newError(prefix, "map key must be string, got %s", v.Type().Key())
@@ -160,6 +182,24 @@ func (c *Codec[T]) toMap(v reflect.Value, prefix string) error {
 	return nil
 }
 
+// toNative converts the parsed key-value pairs into native Go types for interface{}/any.
+//
+// This method is used when the target type is interface{} or any. It creates a
+// map[string]any where each value is converted to the most appropriate native type:
+//   - Boolean strings ("true"/"false") → bool
+//   - Integer strings ("123") → int64
+//   - Float strings ("3.14") → float64
+//   - Everything else → string
+//
+// Unlike toMap, this method always returns a map[string]any regardless of prefix,
+// but it filters keys by prefix if provided.
+//
+// Parameters:
+//   - prefix: Optional prefix to filter keys (empty string means include all)
+//
+// Returns:
+//   - any: A map[string]any containing the filtered and converted values
+//   - error: An error if conversion fails
 func (c *Codec[T]) toNative(prefix string) (any, error) {
 	m := make(map[string]any)
 	for k, v := range c.temp {
