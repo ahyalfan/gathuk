@@ -20,7 +20,11 @@ var (
 	//  type Config struct {
 	//      Port int `config:"server_port"`  // Maps to SERVER_PORT in env, server_port in JSON
 	//  }
-	name       Tag = "config" // if use name tag
+	name Tag = "config" // if use name tag
+	// Deprecated: nestedName is no longer needed.
+	//
+	// Nested struct handling is now fully supported using the `config` tag alone,
+	// so defining a special `nested` tag is unnecessary.
 	nestedName Tag = "nested" // if use nested tag
 )
 
@@ -29,7 +33,8 @@ func GetTagName() Tag {
 	return name
 }
 
-// GetTagNestedName returns the tag used for nested fields.
+// Deprecated: No longer required. Nested structures now work using only the
+// `config` tag, so this function exists only for backward compatibility.
 func GetTagNestedName() Tag {
 	return nestedName
 }
@@ -62,6 +67,10 @@ func SetTagName(tagName string) {
 	name = Tag(tagName)
 }
 
+// Deprecated: Setting a special nested tag is no longer recommended.
+// Use the `config` tag consistently for both fields and nested prefixes.
+//
+// This function remains for backward compatibility.
 // SetTagNestedName sets a custom tag name for nested structure prefixes.
 //
 // This function allows changing the default "nested" tag to a different name.

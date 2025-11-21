@@ -35,8 +35,9 @@ type Database struct {
 }
 
 type Simple3 struct {
-	Simplee     int      `config:"simple_e"`
-	Debug       bool     `config:"debug_c"`
+	Simplee int  `config:"simple_e"`
+	Debug   bool `config:"debug_c"`
+	// Database    Database `nested:"db"` // depreceted flags
 	Database    Database `nested:"db"`
 	ExampleType string
 	User        string
