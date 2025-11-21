@@ -68,8 +68,6 @@ type Gathuk[T any] struct {
 	// value stores the parsed and merged configuration struct
 	value T
 
-	// map value -> if map feature ready, like convert to map or write use map
-
 	// CodecRegistry manages encoders and decoders for different file formats.
 	// By default, it includes support for .env files
 	CodecRegistry option.CodecRegistry[T]
@@ -433,6 +431,10 @@ func (g *Gathuk[T]) write(out io.Writer, format string, config T) error {
 	enc, err := g.CodecRegistry.Encoder(format)
 	if err != nil {
 		return err
+	}
+
+	if ok := enc.CheckEncodeOption(); !ok {
+		enc.ApplyEncodeOption(&g.globalEncodeOpt)
 	}
 
 	bys, err := enc.Encode(config)
