@@ -76,7 +76,18 @@ func (c *Codec[T]) scanNestedWithNestedPrefix(
 				}
 				if nestedName == "" {
 					nestedName = structField.Tag.Get(string(shared.GetTagName()))
+					if nestedName == "-" {
+						continue
+					}
 				}
+
+				if nestedName == "" {
+					nestedName = structField.Tag.Get("env")
+					if nestedName == "-" {
+						continue
+					}
+				}
+
 				if nestedName == "" {
 					nestedName = utility.PascalToUpperSnakeCase(structField.Name)
 				}
@@ -95,6 +106,13 @@ func (c *Codec[T]) scanNestedWithNestedPrefix(
 			if name == "-" {
 				continue
 			}
+			if name == "" {
+				name = structField.Tag.Get("env")
+				if name == "-" {
+					continue
+				}
+			}
+
 			if name == "" {
 				name = utility.PascalToUpperSnakeCase(structField.Name)
 			}

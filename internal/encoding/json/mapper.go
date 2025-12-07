@@ -120,6 +120,12 @@ func (c *Codec[T]) structToNode(v reflect.Value, path string) (ASTNode, error) {
 		if jsonTag == "-" {
 			continue
 		}
+		if jsonTag == "" {
+			jsonTag = field.Tag.Get("json")
+			if jsonTag == "-" {
+				continue
+			}
+		}
 
 		name := jsonTag
 		if idx := strings.Index(jsonTag, ","); idx != -1 {
@@ -299,6 +305,12 @@ func (c *Codec[T]) mapObject(node ObjectNode, v reflect.Value, path string) erro
 		jsonTag := field.Tag.Get(string(shared.GetTagName()))
 		if jsonTag == "-" {
 			continue
+		}
+		if jsonTag == "" {
+			jsonTag = field.Tag.Get("json")
+			if jsonTag == "-" {
+				continue
+			}
 		}
 
 		name := jsonTag
