@@ -33,7 +33,7 @@
 //	    Database struct {
 //	        Host string  // Maps to DB_HOST
 //	        Port int     // Maps to DB_PORT
-//	    } `nested:"db"`
+//	    } 'config':"db"`
 //	}
 package dotenv
 

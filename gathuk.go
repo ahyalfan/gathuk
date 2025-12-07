@@ -46,7 +46,7 @@ import (
 //	    Database struct {
 //	        Host string
 //	        Port int
-//	    } `nested:"db"`
+//	    } `config:"db"`
 //	}
 //
 //	gt := gathuk.NewGathuk[AppConfig]()
