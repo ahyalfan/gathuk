@@ -2,5 +2,8 @@
   "id": 1,
   "name": "John Doe",
   "email": "john@example.com",
-  "is_active": true
+  "is_active": true,
+  "yaho": "yaho",
+  "no1priority": "halo",
+  "no2priority": "halo2"
 }

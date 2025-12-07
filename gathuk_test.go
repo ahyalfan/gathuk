@@ -45,13 +45,15 @@ type Simple3 struct {
 }
 
 type User struct {
-	ID           int           `config:"id"`
-	Name         string        `config:"name"`
-	Email        string        `config:"email"`
-	Roles        []string      `config:"roles"`
-	IsActive     bool          `config:"is_active"`
-	Profile      Profile       `config:"profile"`
-	Transactions []Transaction `config:"transactions"`
+	ID              int           `config:"id"`
+	Name            string        `config:"name"`
+	Email           string        `config:"email"`
+	Roles           []string      `config:"roles"`
+	IsActive        bool          `config:"is_active"`
+	Profile         Profile       `config:"profile"`
+	Transactions    []Transaction `config:"transactions"`
+	JsonTagExample  string        `json:"yaho"`
+	PriorityExample string        `config:"no1priority" json:"no2priority"`
 }
 
 type Profile struct {
@@ -91,6 +93,8 @@ func TestGathukLoad(t *testing.T) {
 		customtests.Equals(t, 1, gt2.GetConfig().ID)
 		customtests.Equals(t, "john@example.com", gt2.GetConfig().Email)
 		customtests.Equals(t, true, gt2.GetConfig().IsActive)
+		customtests.Equals(t, "yaho", gt2.GetConfig().JsonTagExample)
+		customtests.Equals(t, "halo", gt2.GetConfig().PriorityExample)
 
 		gt3 := NewGathuk[any]()
 
