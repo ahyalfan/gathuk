@@ -22,7 +22,7 @@ func TestCodec(t *testing.T) {
 	})
 	got := &Example{}
 	err := cdc.Decode([]byte(
-		`HELLO=apa
+		`HELLO="apa"
 		 HOLLA=1a`), got)
 
 	customtests.OK(t, err)

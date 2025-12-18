@@ -245,6 +245,8 @@ func (c *Codec[T]) Decode(buf []byte, val *T) error {
 			continue
 		}
 
+		bs[1] = bytes.Trim(bs[1], "\"")
+
 		c.temp[string(bs[0])] = bs[1]
 
 		if c.do.PersistToOSEnv {
