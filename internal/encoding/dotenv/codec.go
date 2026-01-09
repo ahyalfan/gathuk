@@ -39,6 +39,7 @@ package dotenv
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -234,18 +235,21 @@ func (c *Codec[T]) Decode(buf []byte, val *T) error {
 			line = line[:escape]
 		}
 
-		bs := bytes.Split(line, []byte(" "))
-
-		if len(bs) < 1 {
-			continue
-		}
-		bs = bytes.Split(bs[0], []byte("="))
+		bs := bytes.Split(line, []byte("="))
 
 		if len(bs) < 2 {
 			continue
 		}
 
-		bs[1] = bytes.Trim(bs[1], "\"")
+		if bytes.ContainsRune(bs[0], ' ') {
+			return fmt.Errorf(
+				"invalid env key at line %s: %q (spaces are not allowed in keys)",
+				string(line),
+				bs[0],
+			)
+		}
+
+		// bs[1] = bytes.Trim(bs[1], "\"") // you remove " in first and end
 
 		c.temp[string(bs[0])] = bs[1]
 
