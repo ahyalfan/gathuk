@@ -166,7 +166,7 @@ func TestGathukLoad(t *testing.T) {
 		t.Run("Test 4.2: option global with automaticenv", func(t *testing.T) {
 			gt := NewGathuk[Simple3]()
 
-			gt.globalDecodeOpt.AutomaticEnv = true
+			gt.GlobalDecodeOpt.AutomaticEnv = true
 
 			err := gt.LoadConfigFiles(EXAMPLE_2_ENV_file)
 			customtests.OK(t, err)
@@ -180,8 +180,8 @@ func TestGathukLoad(t *testing.T) {
 		t.Run("Test 4.3: option global with automaticenv but file priority", func(t *testing.T) {
 			gt := NewGathuk[Simple3]()
 
-			gt.globalDecodeOpt.AutomaticEnv = true
-			gt.globalDecodeOpt.PreferFileOverEnv = true
+			gt.GlobalDecodeOpt.AutomaticEnv = true
+			gt.GlobalDecodeOpt.PreferFileOverEnv = true
 
 			err := gt.LoadConfigFiles(EXAMPLE_2_ENV_file)
 			customtests.OK(t, err)
@@ -195,9 +195,9 @@ func TestGathukLoad(t *testing.T) {
 		t.Run("Test 4.4: option global with set in os env", func(t *testing.T) {
 			gt := NewGathuk[Simple3]()
 
-			gt.globalDecodeOpt.AutomaticEnv = true
-			gt.globalDecodeOpt.PreferFileOverEnv = true
-			gt.globalDecodeOpt.PersistToOSEnv = true
+			gt.GlobalDecodeOpt.AutomaticEnv = true
+			gt.GlobalDecodeOpt.PreferFileOverEnv = true
+			gt.GlobalDecodeOpt.PersistToOSEnv = true
 
 			err := gt.LoadConfigFiles(EXAMPLE_ENV_FILE)
 			customtests.OK(t, err)

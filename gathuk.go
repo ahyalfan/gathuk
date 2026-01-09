@@ -53,10 +53,10 @@ import (
 type Gathuk[T any] struct {
 	// globalDecodeOpt contains decode options applied to all decoders
 	// unless overridden by format-specific options
-	globalDecodeOpt option.DecodeOption
+	GlobalDecodeOpt option.DecodeOption
 	// globalEncodeOpt contains encode options applied to all encoders
 	// unless overridden by format-specific options
-	globalEncodeOpt option.EncodeOption
+	GlobalEncodeOpt option.EncodeOption
 
 	Mode string // dev, staging, production. mungkin set modenya di taruh di flag pas jalanin binary
 	// mode file example dev.env,stag.env,dev.json
@@ -319,7 +319,7 @@ func (g *Gathuk[T]) load(src io.Reader, format string, val *T) error {
 	}
 
 	if ok := dc.CheckDecodeOption(); !ok {
-		dc.ApplyDecodeOption(&g.globalDecodeOpt)
+		dc.ApplyDecodeOption(&g.GlobalDecodeOpt)
 	}
 
 	err = dc.Decode(by, val)
@@ -434,7 +434,7 @@ func (g *Gathuk[T]) write(out io.Writer, format string, config T) error {
 	}
 
 	if ok := enc.CheckEncodeOption(); !ok {
-		enc.ApplyEncodeOption(&g.globalEncodeOpt)
+		enc.ApplyEncodeOption(&g.GlobalEncodeOpt)
 	}
 
 	bys, err := enc.Encode(config)

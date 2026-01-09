@@ -319,13 +319,13 @@ type Config struct {
 gt := gathuk.NewGathuk[Config]()
 
 // Enable automatic environment variable binding
-gt.globalDecodeOpt.AutomaticEnv = true
+gt.GlobalDecodeOpt.AutomaticEnv = true
 
 // Prefer file values over environment variables
-gt.globalDecodeOpt.PreferFileOverEnv = true
+gt.GlobalDecodeOpt.PreferFileOverEnv = true
 
 // Persist decoded values to OS environment
-gt.globalDecodeOpt.PersistToOSEnv = true
+gt.GlobalDecodeOpt.PersistToOSEnv = true
 
 err := gt.LoadConfigFiles("config.env")
 ```
@@ -352,7 +352,7 @@ err := gt.LoadConfigFiles("config.env")
 
 ```go
 gt := gathuk.NewGathuk[Config]()
-gt.globalDecodeOpt.AutomaticEnv = true
+gt.GlobalDecodeOpt.AutomaticEnv = true
 // Environment variables override file values
 err := gt.LoadConfigFiles("config.env")
 ```
@@ -361,8 +361,8 @@ err := gt.LoadConfigFiles("config.env")
 
 ```go
 gt := gathuk.NewGathuk[Config]()
-gt.globalDecodeOpt.AutomaticEnv = true
-gt.globalDecodeOpt.PreferFileOverEnv = true
+gt.GlobalDecodeOpt.AutomaticEnv = true
+gt.GlobalDecodeOpt.PreferFileOverEnv = true
 // File values override environment variables
 err := gt.LoadConfigFiles("config.env")
 ```
@@ -493,7 +493,7 @@ os.Setenv("PORT", "9000")
 os.Setenv("HOST", "0.0.0.0")
 
 gt := gathuk.NewGathuk[Config]()
-gt.globalDecodeOpt.AutomaticEnv = true
+gt.GlobalDecodeOpt.AutomaticEnv = true
 
 // No files - only environment
 err := gt.LoadConfigFiles()
@@ -514,7 +514,7 @@ HOST=localhost
 os.Setenv("PORT", "9000") // This will win
 
 gt := gathuk.NewGathuk[Config]()
-gt.globalDecodeOpt.AutomaticEnv = true
+gt.GlobalDecodeOpt.AutomaticEnv = true
 err := gt.LoadConfigFiles("config.env")
 
 config := gt.GetConfig()
@@ -527,8 +527,8 @@ config := gt.GetConfig()
 os.Setenv("PORT", "9000") // This will be ignored
 
 gt := gathuk.NewGathuk[Config]()
-gt.globalDecodeOpt.AutomaticEnv = true
-gt.globalDecodeOpt.PreferFileOverEnv = true
+gt.GlobalDecodeOpt.AutomaticEnv = true
+gt.GlobalDecodeOpt.PreferFileOverEnv = true
 err := gt.LoadConfigFiles("config.env")
 
 config := gt.GetConfig()
@@ -548,7 +548,7 @@ os.Setenv("DEBUG", "true")      // Additional env var
 os.Setenv("LOG_LEVEL", "info")  // Additional env var
 
 gt := gathuk.NewGathuk[Config]()
-gt.globalDecodeOpt.AutomaticEnv = true
+gt.GlobalDecodeOpt.AutomaticEnv = true
 err := gt.LoadConfigFiles("config.env")
 
 config := gt.GetConfig()
@@ -569,7 +569,7 @@ type Config struct {
 
 func main() {
     gt := gathuk.NewGathuk[Config]()
-    gt.globalDecodeOpt.AutomaticEnv = true
+    gt.GlobalDecodeOpt.AutomaticEnv = true
 
     // In Docker/K8s, all config comes from environment
     // Set via docker-compose.yml, Dockerfile ENV, or K8s ConfigMap
@@ -934,14 +934,14 @@ os.Setenv("USER", "env_user")
 os.Setenv("EDITOR", "nvim")
 
 gt := gathuk.NewGathuk[Config]()
-gt.globalDecodeOpt.AutomaticEnv = true
+gt.GlobalDecodeOpt.AutomaticEnv = true
 
 err := gt.LoadConfigFiles("config.env")
 // Result: {User: "env_user", Port: 8080, Editor: "nvim"}
 // USER from env overrides file, EDITOR only in env, PORT from file
 
 // With PreferFileOverEnv
-gt.globalDecodeOpt.PreferFileOverEnv = true
+gt.GlobalDecodeOpt.PreferFileOverEnv = true
 err = gt.LoadConfigFiles("config.env")
 // Result: {User: "file_user", Port: 8080, Editor: "nvim"}
 // USER from file overrides env, EDITOR still from env
@@ -1027,7 +1027,7 @@ type LogConfig struct {
 func main() {
     // Load configuration
     gt := gathuk.NewGathuk[Config]()
-    gt.globalDecodeOpt.AutomaticEnv = true
+    gt.GlobalDecodeOpt.AutomaticEnv = true
 
     env := os.Getenv("APP_ENV")
     if env == "" {
@@ -1189,7 +1189,7 @@ type QueueConfig struct {
 
 func LoadConfig() (*Config, error) {
     gt := gathuk.NewGathuk[Config]()
-    gt.globalDecodeOpt.AutomaticEnv = true
+    gt.GlobalDecodeOpt.AutomaticEnv = true
 
     // Load base + environment-specific config
     env := os.Getenv("SERVICE_ENVIRONMENT")
@@ -1284,7 +1284,7 @@ func main() {
 
     // Load configuration
     gt := gathuk.NewGathuk[Config]()
-    gt.globalDecodeOpt.AutomaticEnv = true
+    gt.GlobalDecodeOpt.AutomaticEnv = true
 
     files := []string{}
 
@@ -1368,7 +1368,7 @@ func TestConfigLoading(t *testing.T) {
 
             // Load config
             gt := gathuk.NewGathuk[Config]()
-            gt.globalDecodeOpt.AutomaticEnv = true
+            gt.GlobalDecodeOpt.AutomaticEnv = true
 
             err := gt.LoadConfigFiles(tt.envFile)
             if (err != nil) != tt.wantErr {
@@ -1455,7 +1455,7 @@ func NewConfigManager() *ConfigManager {
 
 func (cm *ConfigManager) LoadProfile(name, file string) error {
     gt := gathuk.NewGathuk[Config]()
-    gt.globalDecodeOpt.AutomaticEnv = true
+    gt.GlobalDecodeOpt.AutomaticEnv = true
 
     if err := gt.LoadConfigFiles(file); err != nil {
         return fmt.Errorf("failed to load profile %s: %w", name, err)
@@ -1584,28 +1584,28 @@ for _, file := range files {
 }
 ```
 
-2. **Load once, use many times**
+1. **Load once, use many times**
 
 ```go
 // ✅ Good: Load once at startup
-var globalConfig Config
+var GlobalConfig Config
 
 func init() {
     gt := gathuk.NewGathuk[Config]()
     gt.LoadConfigFiles("config.env")
-    globalConfig = gt.GetConfig()
+    GlobalConfig = gt.GetConfig()
 }
 
 func handler1() {
-    // Use globalConfig
+    // Use GlobalConfig
 }
 
 func handler2() {
-    // Use globalConfig
+    // Use GlobalConfig
 }
 ```
 
-3. **Use concrete struct types**
+1. **Use concrete struct types**
 
 ```go
 // ✅ Good: Concrete type (faster)
@@ -1761,7 +1761,7 @@ func LoadConfigWithDefaults() (*Config, error) {
 
     // Override with file values
     gt := gathuk.NewGathuk[Config]()
-    gt.globalDecodeOpt.AutomaticEnv = true
+    gt.GlobalDecodeOpt.AutomaticEnv = true
 
     // LoadConfigFiles will only override non-zero values
     if err := gt.LoadConfigFiles("config.env"); err != nil {
@@ -1824,7 +1824,7 @@ DEBUG=true
 ```go
 func LoadConfig(files ...string) (*Config, error) {
     gt := gathuk.NewGathuk[Config]()
-    gt.globalDecodeOpt.AutomaticEnv = true
+    gt.GlobalDecodeOpt.AutomaticEnv = true
 
     // Filter existing files
     existingFiles := []string{}
@@ -1914,7 +1914,7 @@ type Config struct {
 }
 
 gt := gathuk.NewGathuk[Config]()
-gt.globalDecodeOpt.AutomaticEnv = true
+gt.GlobalDecodeOpt.AutomaticEnv = true
 
 if err := gt.LoadConfigFiles("config.json"); err != nil {
     log.Fatal(err)
