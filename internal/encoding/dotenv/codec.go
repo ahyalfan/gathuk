@@ -235,7 +235,7 @@ func (c *Codec[T]) Decode(buf []byte, val *T) error {
 			line = line[:escape]
 		}
 
-		bs := bytes.Split(line, []byte("="))
+		bs := bytes.SplitN(line, []byte("="), 2)
 
 		if len(bs) < 2 {
 			continue
