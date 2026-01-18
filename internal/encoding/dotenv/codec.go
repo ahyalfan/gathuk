@@ -250,6 +250,7 @@ func (c *Codec[T]) Decode(buf []byte, val *T) error {
 		}
 
 		// bs[1] = bytes.Trim(bs[1], "\"") // you remove " in first and end
+		bs[1] = bytes.TrimSpace(bs[1]) // you remove space in first and end
 
 		c.temp[string(bs[0])] = bs[1]
 
