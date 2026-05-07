@@ -23,6 +23,8 @@ func TestCodec(t *testing.T) {
 	got := &Example{}
 	err := cdc.Decode([]byte(
 		`HELLO="apa_ena ini"
+		HELLO="apa_ena#ini"
+		#H@ELLO="apa_ena#ini" #invalid character
 		 HOLLA=1a`), got)
 
 	customtests.OK(t, err)
