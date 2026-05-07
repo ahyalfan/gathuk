@@ -230,35 +230,35 @@ func (c *Codec[T]) Decode(buf []byte, val *T) error {
 	for line := range lines {
 
 		line = bytes.TrimSpace(line)
-		escape := bytes.IndexByte(line, '#')
-		if escape != -1 {
-			line = line[:escape]
-		}
 
-		bs := bytes.SplitN(line, []byte("="), 2)
-
-		if len(bs) < 2 {
+		// skip empty / comment line
+		if len(line) == 0 || line[0] == '#' {
 			continue
 		}
 
-		if bytes.ContainsRune(bs[0], ' ') {
+		// split KEY=VALUE
+		idx := bytes.IndexByte(line, '=')
+		if idx == -1 {
+			continue
+		}
+
+		key := bytes.TrimSpace(line[:idx])
+		valBytes := bytes.TrimSpace(line[idx+1:])
+
+		if err := validateEnvKey(key); err != nil {
 			return fmt.Errorf(
-				"invalid env key at line %s: %q (spaces are not allowed in keys)",
+				"invalid character in env key at line %s: %q",
 				string(line),
-				bs[0],
+				key,
 			)
 		}
 
-		// bs[1] = bytes.Trim(bs[1], "\"") // you remove " in first and end
-		bs[1] = bytes.TrimSpace(bs[1]) // you remove space in first and end
+		parsedVal := parseEnvValue(valBytes)
 
-		c.temp[string(bs[0])] = bs[1]
+		c.temp[string(key)] = parsedVal
 
 		if c.do.PersistToOSEnv {
-			err := os.Setenv(string(bs[0]), string(bs[1]))
-			if err != nil {
-				return nil
-			}
+			_ = os.Setenv(string(key), string(parsedVal))
 		}
 	}
 
@@ -281,6 +281,72 @@ func (c *Codec[T]) Decode(buf []byte, val *T) error {
 	err := c.scanWithNestedPrefix(val)
 
 	return err
+}
+
+func parseEnvValue(v []byte) []byte {
+	v = bytes.TrimSpace(v)
+
+	if len(v) == 0 {
+		return v
+	}
+
+	// -------------------------
+	// SINGLE QUOTE: 'value'
+	// raw literal, no parsing
+	// -------------------------
+	if v[0] == '\'' {
+		end := bytes.LastIndexByte(v, '\'')
+		if end > 0 {
+			return v[1:end]
+		}
+		return v[1:]
+	}
+
+	// -------------------------
+	// DOUBLE QUOTE: "value"
+	// raw literal (future: escape support)
+	// -------------------------
+	if v[0] == '"' {
+		end := bytes.LastIndexByte(v, '"')
+		if end > 0 {
+			return v[1:end]
+		}
+		return v[1:]
+	}
+
+	// -------------------------
+	// UNQUOTED: support comment #
+	// -------------------------
+	if i := bytes.IndexByte(v, '#'); i != -1 {
+		v = v[:i]
+	}
+
+	return bytes.TrimSpace(v)
+}
+
+func validateEnvKey(key []byte) error {
+	key = bytes.TrimSpace(key)
+
+	if len(key) == 0 {
+		return fmt.Errorf("empty env key")
+	}
+
+	for _, c := range key {
+		if !isValidEnvChar(c) {
+			return fmt.Errorf("invalid character in env key: %q", key)
+		}
+	}
+
+	return nil
+}
+
+func isValidEnvChar(c byte) bool {
+	return c == '_' ||
+		c == '.' ||
+		c == '-' ||
+		(c >= 'A' && c <= 'Z') ||
+		(c >= 'a' && c <= 'z') ||
+		(c >= '0' && c <= '9')
 }
 
 // flattenWithNestedPrefix initiates the flattening process for encoding.
