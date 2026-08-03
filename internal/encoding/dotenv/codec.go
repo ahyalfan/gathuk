@@ -257,12 +257,12 @@ func (c *Codec[T]) Decode(buf []byte, val *T) error {
 
 		c.temp[string(key)] = parsedVal
 
-		if c.do.PersistToOSEnv {
+		if c.do != nil && c.do.PersistToOSEnv {
 			_ = os.Setenv(string(key), string(parsedVal))
 		}
 	}
 
-	if c.do.AutomaticEnv {
+	if c.do != nil && c.do.AutomaticEnv {
 		if c.do.PreferFileOverEnv {
 			for _, e := range os.Environ() {
 				pair := strings.SplitN(e, "=", 2)
